@@ -49,10 +49,7 @@
     <Compile Include="MicrophoneSoundSignalReader.cs" />
     <Compile Include="Recorder.cs" />
     <Compile Include="SoundSignalReader.cs" />
-    <Compile Include="WavFile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WavFileExceptions.cs" />
-    <Compile Include="WavFormat.cs" />
     <Compile Include="WavSoundSignalReader.cs" />
   </ItemGroup>
   <ItemGroup>

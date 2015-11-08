@@ -40,19 +40,13 @@ namespace SpeechRecognition.UI
         #region Methods
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            //if (System.IO.File.Exists("HMModels.dat"))
-            //{
-            //    _classifier = HiddenMarkovClassifier.Load("HMModels.dat");
-            //}
-
+        {           
             var result = TrainResult.Load("SavedData", "model");
             if (result != null)
             {
                 _classifier = result.Hmm;
                 _codebook = result.Catalog;
             }
-
         }        
 
         private void Train()

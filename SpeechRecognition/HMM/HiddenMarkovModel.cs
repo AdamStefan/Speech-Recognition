@@ -35,37 +35,37 @@ namespace SpeechRecognition.HMM
         /**
          * current observation sequence
          */
-        protected int[] _currentSeq;
+        private int[] _currentSeq;
         /**
          * number of observation sequence
          */
-        protected int _num_obSeq;
+        private int _num_obSeq;
         /**
          * state transition probability example: probability from one state to
          * another state
          */
-        protected double[,] _transition;
+        private double[,] _transition;
         /**
          * discrete output probability example: probability of a specific output
          * from a state
          */
-        protected double[][] _output;
+        private double[][] _output;
         /**
          * initial state distribution example: which state is the starting state
          */
-        protected double[] _pi;
+        private double[] _pi;
         /**
          * forward variable alpha
          */
-        protected double[,] _alpha;
+        private double[,] _alpha;
         /**
          * backward variable beta
          */
-        protected double[,] _beta;
+        private double[,] _beta;
         /**
          * Scale Coefficient
          */
-        protected double[] _scaleFactor;
+        private double[] _scaleFactor;
         /**
          * variable for viterbi algorithm
          */
