@@ -11,7 +11,7 @@ using SpeechRecognition.FeaturesProvider.MelFrequencySpectrum;
 namespace SpeechRecognitionTests
 {
     [TestClass]
-    public class UnitTest1
+    public class EngineTests
     {
         [TestMethod]
         public void TestMethod1()
