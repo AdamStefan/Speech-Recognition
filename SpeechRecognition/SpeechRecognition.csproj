@@ -62,7 +62,7 @@
     <Compile Include="FeaturesProvider\MelFrequencySpectrum\MellFreqProviderParameters.cs" />
     <Compile Include="FeaturesProvider\MelFrequencySpectrum\MellFrequencyCepstrumProvider.cs" />
     <Compile Include="FeaturesProvider\MelFrequencySpectrum\MFCC.cs" />
-    <Compile Include="RecognizeEngineDiscreteHMMLearning2.cs" />
+    <Compile Include="RecognizeEngineDiscreteHMMLearningLocal.cs" />
     <Compile Include="DiscreteCosinusTransform.cs" />
     <Compile Include="EndPointDetection.cs" />
     <Compile Include="EngineParamers.cs" />

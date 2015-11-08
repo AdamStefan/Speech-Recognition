@@ -275,7 +275,7 @@ namespace SpeechRecognitionTests
             //var recognitionEngine = new RecognizeEngineDiscreteHMMLearning(codeBook);
             //var result = recognitionEngine.TrainAll(learningWordSignals);
 
-            var recognitionEngine = new RecognizeEngineDiscreteHmmLearning2(codeBook);
+            var recognitionEngine = new RecognizeEngineDiscreteHmmLearningLocal(codeBook);
             recognitionEngine.TrainAll(learningWordSignals);
 
 
@@ -318,9 +318,7 @@ namespace SpeechRecognitionTests
                 signals[index] = index;
             }
 
-            var ret = Mfcc.ApplyFilterbankFilter(signals, fBins);
-
-            var ret1 = Mfcc.ApplyFilterbankFilter2(signals, fBins);
+            var ret = Mfcc.ApplyFilterbankFilter(signals, fBins);       
 
         }
 

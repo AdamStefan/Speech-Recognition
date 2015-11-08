@@ -61,7 +61,7 @@ namespace SpeechRecognition
             _nextFrame = null;
             filteredSignal.Reset();
 
-            //stepSize = frameSize; 
+
             var silenceThreshHold = (frameSize * SilenceThreshHold) / stepSize;
             var minWordLength = (frameSize * 8) / stepSize;
             while (Read(filteredSignal, frameSize, stepSize, out frame))

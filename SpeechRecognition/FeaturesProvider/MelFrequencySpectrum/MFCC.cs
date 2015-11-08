@@ -34,7 +34,6 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
 
         #endregion
 
-
         #region Methods
 
         public double[] Extract(float[] frame, out bool isEmpty)
@@ -136,41 +135,7 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
             }
 
             return fvalues;
-        }
-
-        public static double[] ApplyFilterbankFilter2(double[] powerSpectralEstimates, int[] filterBankCoeficient)
-        {
-            double[] temp = new double[filterBankCoeficient.Length];
-            for (int k = 1; k <= filterBankCoeficient.Length - 2; k++)
-            {
-                double num1 = 0.0, num2 = 0.0;
-                for (int i = filterBankCoeficient[k - 1]; i <= filterBankCoeficient[k]; i++)
-                {
-                    var nominator = (double)(i - filterBankCoeficient[k - 1] + 1);
-                    var denominator = (double)(filterBankCoeficient[k] - filterBankCoeficient[k - 1] + 1);
-                    var value = nominator / denominator;
-
-                    num1 += (value * value) * powerSpectralEstimates[i];
-                }
-
-                for (int i = filterBankCoeficient[k] + 1; i <= filterBankCoeficient[k + 1]; i++)
-                {
-                    var nominator = (double)(i - filterBankCoeficient[k]);
-                    var denominator = (double)(filterBankCoeficient[k + 1] - filterBankCoeficient[k] + 1);
-                    var tempVal = 1 - (nominator / denominator);
-                    num2 += (tempVal * tempVal) * powerSpectralEstimates[i];
-                }
-
-                temp[k] = num1 + num2;
-            }
-            double[] fbank = new double[filterBankCoeficient.Length - 2];
-            for (int i = 0; i < fbank.Length; i++)
-            {
-                fbank[i] = Utils.Log(temp[i + 1]);
-                //fbank[i] = temp[i + 1];                
-            }
-            return fbank;
-        }
+        }        
 
         public static double[] ApplyFilterbankFilter(double[] powerSpectralEstimates, int[] filterBankCoeficient)
         {
@@ -218,54 +183,7 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
             return ret;
 
         }
-
-        public static double[] ApplyFilterbankFilter3(double[] powerSpectralEstimates, int[] filterBankCoeficient)
-        {
-            var ret = new double[filterBankCoeficient.Length - 2];
-
-            Func<int, int, double> filterBankFunction = (filterBankfunctionIndex, frequency) =>
-            {
-                if (frequency < filterBankCoeficient[filterBankfunctionIndex - 1])
-                {
-                    return 0;
-                }
-                if (frequency <= filterBankCoeficient[filterBankfunctionIndex])
-                {
-                    var nominator = (double)(frequency - filterBankCoeficient[filterBankfunctionIndex - 1]);
-                    var denominator = (double)(filterBankCoeficient[filterBankfunctionIndex] - filterBankCoeficient[filterBankfunctionIndex - 1]);
-
-                    return nominator / denominator;
-                }
-
-                var rightSide = 2 * filterBankCoeficient[filterBankfunctionIndex] - filterBankCoeficient[filterBankfunctionIndex - 1];
-                if (frequency <= rightSide)
-                {
-                    var nominator = (double)(rightSide - frequency);
-                    var denominator = (double)(filterBankCoeficient[filterBankfunctionIndex] - filterBankCoeficient[filterBankfunctionIndex - 1]);
-
-                    return nominator / denominator;
-                }
-                return 0;
-            };
-
-
-            for (int fbIndex = 0; fbIndex < filterBankCoeficient.Length - 2; fbIndex++)
-            {
-                ret[fbIndex] = 0;
-                for (int index = 0; index < powerSpectralEstimates.Length; index++)
-                {
-                    var fBank = filterBankFunction(fbIndex + 1, index);
-                    ret[fbIndex] += powerSpectralEstimates[index] * fBank * fBank;
-                }
-
-                var value = Utils.Log(ret[fbIndex]);
-
-                ret[fbIndex] = value;
-            }
-
-            return ret;
-        }
-
+        
         #endregion
     }
 }
