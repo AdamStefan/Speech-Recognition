@@ -51,7 +51,7 @@ namespace SpeechRecognition
 
             float[] frame;
             filteredSignal.Reset();
-            var voiceActivationDetection = new VoiceActivationDetection(signal, frameSize, 8);
+            var voiceActivationDetection = new VoiceActivityDetection(signal, frameSize, 8);
             int index = 0;
             var noOfItems = ProviderParameters.NumberOfCoeff - 1; ;
 
