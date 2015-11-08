@@ -186,6 +186,7 @@ namespace SpeechRecognition.UI
             Dispatcher.BeginInvoke((Action)(() =>
             {
                 txtRecognizedText.Text += message + Environment.NewLine;
+                txtRecognizedText.ScrollToEnd();
             }), DispatcherPriority.DataBind);
         }
 
