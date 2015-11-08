@@ -1,0 +1,38 @@
+﻿<Window x:Class="SpeechRecognition.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="555" ResizeMode="NoResize">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <StackPanel MinWidth="200">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Enter Word" Margin="3"></TextBlock>
+                <TextBox Width="200"  BorderThickness="1" Margin="3" x:Name="txtWord"></TextBox>
+            </StackPanel>
+            
+            <!--<Button x:Name="btnRecord" Click="StartRecording">Start Recording</Button>-->
+        </StackPanel>
+
+        <Button Grid.Column="1" x:Name="btnStartStopRecord" Click="StartStopRecording">Start Recording</Button>
+        <Grid Grid.Column="0"  Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Button Grid.Column="0" x:Name="btnLoad" Grid.Row="0" Click="LoadModel">Load</Button>
+            <Button  x:Name="btnTrain" Grid.Row="1" Click="StartTraining">Start Training</Button>            
+        </Grid>        
+        <Button Grid.Column="1" x:Name="btnRecog" Grid.Row="1" Click="StartStopRecognition">Start Recognition</Button>
+        <TextBlock Grid.Row="2">Recognized Text</TextBlock>
+        <TextBox Grid.Row="3" Grid.ColumnSpan="2" x:Name="txtRecognizedText" FontSize="15" IsReadOnly="True"></TextBox>        
+    </Grid>
+</Window>
