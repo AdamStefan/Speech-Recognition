@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using Accord.Statistics.Models.Markov;
@@ -122,6 +123,7 @@ namespace SpeechRecognition.UI
                 _signal.Start();
                 Action action = () =>
                 {
+                    Thread.Sleep(1000);
                     recognitionEngine.RecognizeAsync(_signal, _classifier, OnMessageReceived);
                 };
 

@@ -43,7 +43,7 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
             //var result = FourierTransform.FFTAmplitudeSquared(windowedSample, (int)_numberOfFFTCoeff);
             FourierTransform ft = new FourierTransform();
             ft.computeFFT(windowedSample, _numberOfFftCoeff);
-            var frameEnergy = 0.0;
+            double frameEnergy;
             var result = ft.GetMagnitudeSquared(out frameEnergy);
 
             if (_filterBankCoefficients == null)

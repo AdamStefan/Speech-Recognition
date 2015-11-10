@@ -53,7 +53,7 @@ namespace SpeechRecognition
             filteredSignal.Reset();
             var voiceActivationDetection = new VoiceActivityDetection(signal, frameSize, 8);
             int index = 0;
-            var noOfItems = ProviderParameters.NumberOfCoeff - 1; ;
+            var noOfItems = ProviderParameters.NumberOfCoeff - 1;
 
 
             var observables = new List<double[]>();
