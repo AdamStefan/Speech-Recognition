@@ -19,22 +19,27 @@ namespace SpeechRecognition
         private const int SilenceThreshHold = 10;
 
         private float[] _nextFrame;
+
+        private SampleAggregator _sampleAggregator;
+
+        
         
         #endregion
 
         #region Instance
 
         public FeatureUtility()
-            : this(EngineParameters.Default)
+            : this(EngineParameters.Default, null)
         {
 
         }
 
-        public FeatureUtility(EngineParameters parameters)
+        public FeatureUtility(EngineParameters parameters, SampleAggregator sampleAggregator)
         {
             FrameSizeMiliseconds = parameters.FrameSizeMiliseconds;
             StepSizeMiliseconds = parameters.StepSizeMiliseconds;
-            ProviderParameters = parameters.ProviderParameters;            
+            ProviderParameters = parameters.ProviderParameters;
+            _sampleAggregator = sampleAggregator;
         }
 
         #endregion
@@ -45,7 +50,7 @@ namespace SpeechRecognition
         {
             var frameSize = (int)Math.Floor(signal.SampleRate * FrameSizeMiliseconds / 1000.0);
             var stepSize = (int)Math.Floor(signal.SampleRate * StepSizeMiliseconds / 1000.0);
-            var filteredSignal = new PreemphasisFilter(signal, 0.95f);
+            var filteredSignal = new PreemphasisFilter(signal, 0.95f, null);
 
             var featureProvider = FeaturesProviderFactory.GetProvider(ProviderParameters, signal);
 
@@ -66,18 +71,14 @@ namespace SpeechRecognition
             var minWordLength = (frameSize * 8) / stepSize;
             while (Read(filteredSignal, frameSize, stepSize, out frame))
             {
-                if (voiceActivationDetection.IsVoice(frame))
-                {
-                    bool isEmpty;
-                    var features = featureProvider.Extract(frame, out isEmpty);
-                  
+                var isVoice = voiceActivationDetection.IsVoice(frame);
 
-                    //if (observables.Count < 3 && isEmpty)
-                    //{
-                    //    observables = new List<double[]>();
-                    //    silentSamples++;
-                    //    continue;
-                    //}
+                _sampleAggregator.WriteData(frame, 0, stepSize, isVoice);
+
+                if (isVoice)
+                {                    
+                    bool isEmpty;
+                    var features = featureProvider.Extract(frame, out isEmpty);                 
 
                     silentSamples = 0;
                     observables.Add(features);

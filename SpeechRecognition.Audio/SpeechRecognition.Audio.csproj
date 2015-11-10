@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArraySignalReader.cs" />
+    <Compile Include="SampleAggregator.cs" />
     <Compile Include="MicrophoneSoundSignalReader.cs" />
     <Compile Include="Recorder.cs" />
     <Compile Include="SoundSignalReader.cs" />

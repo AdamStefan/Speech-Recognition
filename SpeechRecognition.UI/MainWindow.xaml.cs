@@ -25,6 +25,7 @@ namespace SpeechRecognition.UI
         private Codebook _codebook;
         private MicrophoneSoundSignalReader _signal;        
         private readonly Recorder _recorder = new Recorder();
+        private SampleAggregator _aggregator;
 
         #endregion
 
@@ -117,14 +118,24 @@ namespace SpeechRecognition.UI
         {
             if (_currentState == AppState.Idle)
             {
+                
                 txtRecognizedText.Text = string.Empty;
                 var recognitionEngine = new RecognizeEngineDiscreteHmmLearning(_codebook);
                 _signal = new MicrophoneSoundSignalReader();
+
+                var length = (_signal.SampleRate/1000.0)*EngineParameters.Default.StepSizeMiliseconds;
+                if (_aggregator != null)
+                {
+                    _aggregator.SampleReady -= AggregatorSampleReady;
+                }
+                _aggregator = new SampleAggregator(Convert.ToInt32(length));
+                
+                _aggregator.SampleReady += AggregatorSampleReady;
                 _signal.Start();
                 Action action = () =>
                 {
                     Thread.Sleep(1000);
-                    recognitionEngine.RecognizeAsync(_signal, _classifier, OnMessageReceived);
+                    recognitionEngine.RecognizeAsync(_signal, _classifier, OnMessageReceived, _aggregator);
                 };
 
                 action.BeginInvoke(null, null);
@@ -137,8 +148,15 @@ namespace SpeechRecognition.UI
                 btnRecog.Content = "Start Recognition";
                 _signal.Stop();
                 _currentState = AppState.Idle;
+                _aggregator.SampleReady -= AggregatorSampleReady;
+                _aggregator = null;
             }
 
+        }
+
+        private void AggregatorSampleReady(object sender, SampleAggregator.SamplePointEventArgs e)
+        {
+            renderer.AddValue(e.Point);
         }
 
         private void StartStopRecording(object sender, RoutedEventArgs e)

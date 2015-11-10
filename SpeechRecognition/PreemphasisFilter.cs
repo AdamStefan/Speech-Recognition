@@ -9,16 +9,18 @@ namespace SpeechRecognition
         private readonly SoundSignalReader _signalReader;
         private readonly float _filterRatio;        
         private float? _lastFrameValue;
+        private SampleAggregator _sampleAggregator;
 
         #endregion
 
         #region Instance
 
-        public PreemphasisFilter(SoundSignalReader signalReader, float filterRatio)
+        public PreemphasisFilter(SoundSignalReader signalReader, float filterRatio, SampleAggregator sampleAggregator = null)
         {
             _signalReader = signalReader;
             _filterRatio = filterRatio;
             Length = signalReader.Length;
+            _sampleAggregator = sampleAggregator;
         }
 
         #endregion               
@@ -44,6 +46,10 @@ namespace SpeechRecognition
             }            
 
             var ret = _signalReader.Read(tmpbuffer, startIndex, itemsLength);
+            if (_sampleAggregator != null)
+            {
+                _sampleAggregator.WriteData(tmpbuffer, startIndex, itemsLength, false);
+            }
 
             _lastFrameValue = tmpbuffer[tmpbuffer.Length - 1];
 

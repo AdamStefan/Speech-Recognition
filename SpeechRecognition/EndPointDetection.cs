@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SpeechRecognition
 {
@@ -11,17 +7,17 @@ namespace SpeechRecognition
         #region Fields
 
         private float[] _originalSignal; // input
-        private float[] _silenceRemovedSignal;// output
-        private int _samplingRate;
-        private int _firstSamples;
-        private int _samplePerFrame;
+        public float[] _silenceRemovedSignal;// output
+        private readonly int _samplingRate;
+        private readonly int _firstSamples;
+        private readonly int _samplePerFrame;
 
         #endregion
 
         public EndPointDetection(float[] originalSignal, int samplingRate)
         {
-            this._originalSignal = originalSignal;
-            this._samplingRate = samplingRate;
+            _originalSignal = originalSignal;
+            _samplingRate = samplingRate;
             _samplePerFrame = _samplingRate / 1000;
             _firstSamples = _samplePerFrame * 200;// according to formula
         }

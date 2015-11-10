@@ -1,10 +1,7 @@
-﻿using SpeechRecognition.Audio;
-using SpeechRecognition.VectorQuantization;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SpeechRecognition.Audio;
+using SpeechRecognition.VectorQuantization;
 
 namespace SpeechRecognition
 {
@@ -13,7 +10,7 @@ namespace SpeechRecognition
 
         public static Codebook FromWaves(IList<SoundSignalReader> sounds, EngineParameters parameters, int codeBookSize = 256)
         {
-            var featureUtility = new FeatureUtility(parameters);
+            var featureUtility = new FeatureUtility(parameters, null);
             var features = new List<double[][]>();            
             for (var signalIndex = 0; signalIndex < sounds.Count; signalIndex++)
             {

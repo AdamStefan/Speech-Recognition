@@ -10,11 +10,11 @@ namespace SpeechRecognition
     public class RecognizeEngineDiscreteHmmLearningLocal
     {
         #region Properties
-
-        private readonly FeatureUtility _featureUtility;
+        
         private readonly Dictionary<string, HiddenMarkovModel> _models = new Dictionary<string, HiddenMarkovModel>();        
         private readonly int _numberOfHiddenStates;                
         private readonly Codebook _codeBook;
+        private readonly EngineParameters _engineParameters;
 
         #endregion
 
@@ -22,10 +22,9 @@ namespace SpeechRecognition
 
         public RecognizeEngineDiscreteHmmLearningLocal(int numberOfHiddenStates, EngineParameters parameters, Codebook codebook)
         {
-            _numberOfHiddenStates = numberOfHiddenStates;            
-            _featureUtility = new FeatureUtility(parameters);
+            _numberOfHiddenStates = numberOfHiddenStates;
+            _engineParameters = parameters;            
             _codeBook = codebook;
-
         }
 
         public RecognizeEngineDiscreteHmmLearningLocal(Codebook codeBook)
@@ -51,6 +50,8 @@ namespace SpeechRecognition
             var allSignalIndex = 0;
             var modelIndex = 0;
 
+            var featureUtility = new FeatureUtility(_engineParameters, null);
+
             foreach (var item in signalsDictionary)
             {
                 var signals = item.Value; // signals
@@ -61,7 +62,7 @@ namespace SpeechRecognition
                 for (var signalIndex = 0; signalIndex < signalsCount; signalIndex++)
                 {
                     var signal = signals[signalIndex];
-                    List<Double[]> features = _featureUtility.ExtractFeatures(signal).First();
+                    List<Double[]> features = featureUtility.ExtractFeatures(signal).First();
                     featuresInput[modelIndex][signalIndex] = features.ToArray();
                     models[allSignalIndex] = modelIndex;
                     allSignalIndex++;
@@ -95,7 +96,9 @@ namespace SpeechRecognition
 
         public string Recognize(SoundSignalReader signal)
         {
-            var features = _featureUtility.ExtractFeatures(signal).First();            
+
+            var featureUtility = new FeatureUtility(_engineParameters, null);
+            var features = featureUtility.ExtractFeatures(signal).First();            
 
             var observations = _codeBook.Quantize(features.Select(item => new Point(item)).ToArray());
 

@@ -29,7 +29,7 @@ namespace SpeechRecognition
         public RecognitionEngine(EngineParameters parameters)
         {
             _numberOfCoeffcients = parameters.ProviderParameters.NumberOfCoeff;
-            _featureUtility = new FeatureUtility(parameters);
+            _featureUtility = new FeatureUtility(parameters, null);
         }
 
         public RecognitionEngine()

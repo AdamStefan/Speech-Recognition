@@ -1,9 +1,11 @@
 ﻿<Window x:Class="SpeechRecognition.UI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:SpeechRecognition.UI"
         Title="MainWindow" Height="350" Width="555" ResizeMode="NoResize">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
@@ -32,7 +34,8 @@
             <Button  x:Name="btnTrain" Grid.Row="1" Click="StartTraining">Start Training</Button>            
         </Grid>        
         <Button Grid.Column="1" x:Name="btnRecog" Grid.Row="1" Click="StartStopRecognition">Start Recognition</Button>
-        <TextBlock Grid.Row="2">Recognized Text</TextBlock>
-        <TextBox Grid.Row="3" Grid.ColumnSpan="2" x:Name="txtRecognizedText" FontSize="15" IsReadOnly="True"></TextBox>        
+        <ui:PolygonWaveFormControl x:Name="renderer" Height="100"  Grid.Row="2" Grid.ColumnSpan="2"></ui:PolygonWaveFormControl>
+        <TextBlock  Grid.Row="3">Recognized Text</TextBlock>
+        <TextBox Grid.Row="4" Grid.ColumnSpan="2" x:Name="txtRecognizedText" FontSize="15" IsReadOnly="True"></TextBox>        
     </Grid>
 </Window>

@@ -6,19 +6,16 @@ using Accord.Statistics.Models.Markov.Learning;
 using Accord.Statistics.Models.Markov.Topology;
 using SpeechRecognition.Audio;
 using SpeechRecognition.VectorQuantization;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
-using System.Runtime.Serialization;
 
 namespace SpeechRecognition
 {
     public class RecognizeEngineDiscreteHmmLearning
     {
         #region Properties
-
-        private readonly FeatureUtility _featureUtility;             
+              
         private readonly int _numberOfHiddenStates;                
         private readonly Codebook _codeBook;
+        private readonly EngineParameters _engineParameters;
 
         #endregion
 
@@ -26,8 +23,8 @@ namespace SpeechRecognition
 
         public RecognizeEngineDiscreteHmmLearning(int numberOfHiddenStates, EngineParameters parameters, Codebook codebook)
         {
-            _numberOfHiddenStates = numberOfHiddenStates;            
-            _featureUtility = new FeatureUtility(parameters);
+            _numberOfHiddenStates = numberOfHiddenStates;
+            _engineParameters = parameters;  
             _codeBook = codebook;
 
         }
@@ -40,7 +37,9 @@ namespace SpeechRecognition
 
         #endregion
 
-        public TrainResult TrainAll(Dictionary<string, IList<SoundSignalReader>> signalsDictionary)
+        #region Methods
+
+        public TrainResult TrainAll(Dictionary<string, IList<SoundSignalReader>> signalsDictionary, SampleAggregator aggregator= null)
         {
             var numberOfItems = 0;
             foreach (var item in signalsDictionary)
@@ -55,6 +54,8 @@ namespace SpeechRecognition
             var allSignalIndex = 0;
             var modelIndex = 0;
 
+            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+
             foreach (var item in signalsDictionary)
             {
                 var signals = item.Value; // signals
@@ -65,7 +66,7 @@ namespace SpeechRecognition
                 for (var signalIndex = 0; signalIndex < signalsCount; signalIndex++)
                 {
                     var signal = signals[signalIndex];
-                    List<Double[]> features = _featureUtility.ExtractFeatures(signal).First();
+                    List<Double[]> features = featureUtility.ExtractFeatures(signal).First();
 
                     
                     featuresInput[modelIndex][signalIndex] = features.ToArray();
@@ -106,12 +107,14 @@ namespace SpeechRecognition
         }
 
 
-        public TrainResult Train(Dictionary<string, IList<SoundSignalReader>> signalsDictionary)
+        public TrainResult Train(Dictionary<string, IList<SoundSignalReader>> signalsDictionary,SampleAggregator aggregator= null)
         {           
             double[][][][] featuresInput = new Double[signalsDictionary.Count][][][];
             
             var models = new List<int>();
             var modelIndex = 0;
+
+            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
 
             foreach (var item in signalsDictionary)
             {
@@ -122,7 +125,7 @@ namespace SpeechRecognition
                 for (var signalIndex = 0; signalIndex < signalsCount; signalIndex++)
                 {
                     var signal = signals[signalIndex];
-                    var allSignalfeatures = _featureUtility.ExtractFeatures(signal).ToArray();
+                    var allSignalfeatures = featureUtility.ExtractFeatures(signal).ToArray();
                     samples.AddRange(allSignalfeatures);
                     for (var featuresIndex = 0; featuresIndex < allSignalfeatures.Length; featuresIndex++)
                     {
@@ -168,10 +171,12 @@ namespace SpeechRecognition
         }
 
 
-        public int Recognize(SoundSignalReader signal, HiddenMarkovClassifier hmm, out string name)
+        public int Recognize(SoundSignalReader signal, HiddenMarkovClassifier hmm, out string name, SampleAggregator aggregator = null)
         {
+
+            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
             signal.Reset();
-            var features = _featureUtility.ExtractFeatures(signal).First();
+            var features = featureUtility.ExtractFeatures(signal).First();
             var observations = _codeBook.Quantize(features.Select(item => new Point(item)).ToArray());
             
             double[] responsabilities;
@@ -194,7 +199,9 @@ namespace SpeechRecognition
             return ret;
         }
 
-        public void RecognizeAsync(SoundSignalReader signal, HiddenMarkovClassifier hmm, Action<string> handleMessage)
+
+        public void RecognizeAsync(SoundSignalReader signal, HiddenMarkovClassifier hmm, Action<string> handleMessage,
+            SampleAggregator aggregator = null)
         {
             Action<List<double[]>> action = features =>
             {
@@ -216,85 +223,12 @@ namespace SpeechRecognition
 
                 handleMessage(hmm[ret].Tag.ToString());
             };
-            _featureUtility.ExtractFeaturesAsync(signal,action);
+
+            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+            featureUtility.ExtractFeaturesAsync(signal, action);
         }
 
-
-    }
-
-    public class TrainResult
-    {
-        public HiddenMarkovClassifier Hmm { get; set; }
-        public Codebook Catalog { get; set; }
-
-        public void Save(string folder, string name)
-        {
-            var classifierPath = System.IO.Path.Combine(folder, name + "hmm.dat");
-            if (!Directory.Exists(folder))
-            {
-                Directory.CreateDirectory(folder);
-            }
-            Hmm.Save(classifierPath);
-
-            var codebookPath = System.IO.Path.Combine(folder, name + "codebook.dat");
-            FileStream fs = new FileStream(codebookPath, FileMode.Create);
-
-            // Construct a BinaryFormatter and use it to serialize the data to the stream.
-            BinaryFormatter formatter = new BinaryFormatter();
-            try
-            {
-                formatter.Serialize(fs, Catalog);
-            }
-            catch (SerializationException e)
-            {
-                Console.WriteLine("Failed to serialize. Reason: " + e.Message);
-                throw;
-            }
-            finally
-            {
-                fs.Close();
-            }
-
-        }
-
-        public static TrainResult Load(string folder, string name)
-        {
-            var classifierPath = System.IO.Path.Combine(folder, name + "hmm.dat");
-
-            if (!File.Exists(classifierPath))
-            {
-                return null;
-            }
-            var hmm = HiddenMarkovClassifier.Load(classifierPath);
-            var codebookPath = System.IO.Path.Combine(folder, name + "codebook.dat");
-            FileStream fs = new FileStream(codebookPath, FileMode.Open);
-
-            // Construct a BinaryFormatter and use it to serialize the data to the stream.
-            BinaryFormatter formatter = new BinaryFormatter();
-            Codebook cb = null;
-            try
-            {
-                cb = (Codebook)formatter.Deserialize(fs);
-            }
-            catch (SerializationException e)
-            {
-                Console.WriteLine("Failed to serialize. Reason: " + e.Message);
-                throw;
-            }
-            finally
-            {
-                fs.Close();
-            }
-
-            return new TrainResult
-            {
-                Hmm = hmm,
-                Catalog = cb
-            };
-
-        }
-
-
+        #endregion        
     }
 }
 
