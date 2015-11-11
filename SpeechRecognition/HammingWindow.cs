@@ -4,6 +4,9 @@ namespace SpeechRecognition
 {
     public class HammingWindowDef
     {
+        #region Properties
+
+
         public double Alpha { get; private set; }
         public double Beta { get; private set; }
 
@@ -14,58 +17,94 @@ namespace SpeechRecognition
             Beta = beta;
         }
 
+        #endregion
+
 
         public class HammingWindow
         {
-            private readonly double _phaseHammingPart;
-            private readonly HammingWindowDef _definition;
+            #region Fields
+
+            private readonly double[] _values;
+
+            #endregion
+
+            #region Instance
 
             public HammingWindow(HammingWindowDef definition, int signalLength)
             {
-                _phaseHammingPart = 2 * Math.PI / (signalLength - 1);
-                _definition = definition;
+                var phaseHammingPart = 2 * Math.PI / (signalLength - 1);
+                var definition1 = definition;
+
+                _values = new double[signalLength];
+
+                for (int index = 0; index < signalLength; index++)
+                {
+                    _values[index] = definition1.Alpha - (definition1.Beta * Math.Cos(phaseHammingPart * index));
+                }
             }
 
-            public double GetValue(int value)
+            #endregion
+
+            #region Properties
+
+            public double this[int index]
             {
-                return _definition.Alpha - (_definition.Beta * Math.Cos(_phaseHammingPart * value));
+                get
+                {
+                    return _values[index];
+                }
             }
-        }
 
+            #endregion
+
+            #region Methods
+
+            public double[] Apply(double[] signal)
+            {
+                var ret = new double[signal.Length];
+                for (int index = 0; index < signal.Length; index++)
+                {
+                    ret[index] = signal[index] * this[index];
+                }
+
+                return ret;
+            }
+
+            public double[] Apply(float[] signal)
+            {
+                var ret = new double[signal.Length];
+                for (int index = 0; index < signal.Length; index++)
+                {
+                    ret[index] = signal[index] * this[index];
+                }
+
+                return ret;
+            }
+
+            #endregion
+        }
 
         public static double[] ApplyHammingWindow(double[] signal, HammingWindowDef hammingWindowDef = null)
         {
-            var ret = new double[signal.Length];
             if (hammingWindowDef == null)
             {
                 hammingWindowDef = new HammingWindowDef();
             }
-            //var phaseHammingPart = 2 * Math.PI / (signal.Length - 1);
+
             var hammingWindow = new HammingWindow(hammingWindowDef, signal.Length);
 
-            for (int index = 0; index < signal.Length; index++)
-            {
-                ret[index] = signal[index] * hammingWindow.GetValue(index);
-            }
-
-            return ret;
+            return hammingWindow.Apply(signal);
         }
 
         public static double[] ApplyHammingWindow(float[] signal, HammingWindowDef hammingWindowDef = null)
         {
-            var ret = new double[signal.Length];
             if (hammingWindowDef == null)
             {
                 hammingWindowDef = new HammingWindowDef();
-            }            
+            }
             var hammingWindow = new HammingWindow(hammingWindowDef, signal.Length);
 
-            for (int index = 0; index < signal.Length; index++)
-            {
-                ret[index] = signal[index] * hammingWindow.GetValue(index);
-            }
-
-            return ret;
+            return hammingWindow.Apply(signal);
         }
     }
 }

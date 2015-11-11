@@ -20,10 +20,10 @@ namespace SpeechRecognition.UI
 
         #region Fields
 
-        private AppState _currentState; 
-        private HiddenMarkovClassifier _classifier;
+        private AppState _currentState;
+        private HiddenMarkovModel[] _models;
         private Codebook _codebook;
-        private MicrophoneSoundSignalReader _signal;        
+        private MicrophoneSoundSignalReader _signal;
         private readonly Recorder _recorder = new Recorder();
         private SampleAggregator _aggregator;
 
@@ -42,24 +42,24 @@ namespace SpeechRecognition.UI
         #region Methods
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {           
+        {
             var result = TrainResult.Load("SavedData", "model");
             if (result != null)
             {
-                _classifier = result.Hmm;
+                _models = result.Models;
                 _codebook = result.Catalog;
             }
-        }        
+        }
 
         private void Train()
         {
-            Dictionary<string, IList<SoundSignalReader>> learningWordSignals = new Dictionary<string, IList<SoundSignalReader>>();            
+            Dictionary<string, IList<SoundSignalReader>> learningWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
 
             List<string> learningDirectories = new List<string>();
             foreach (var folder in ConfigurationSettings.LearningsFolders)
             {
                 learningDirectories.AddRange(Directory.GetDirectories(folder));
-            }                    
+            }
 
             foreach (var directory in learningDirectories.Where(item => !item.Contains("catalog")))
             {
@@ -77,14 +77,14 @@ namespace SpeechRecognition.UI
 
             var codeBook = CodeBookFactory.FromWaves(catalogSignals, EngineParameters.Default);
 
-            var recognitionEngine = new RecognizeEngineDiscreteHmmLearning(codeBook);            
+            var recognitionEngine = new DetectionEngine(codeBook);
             var result = recognitionEngine.Train(learningWordSignals);
             //result.Hmm.Save("HMModels.dat");
-            _classifier = result.Hmm;
+            _models = result.Models;
             _codebook = result.Catalog;
 
             result.Save("SavedData", "model");
-            
+
         }
 
         private void LoadModel(object sender, RoutedEventArgs e)
@@ -118,24 +118,24 @@ namespace SpeechRecognition.UI
         {
             if (_currentState == AppState.Idle)
             {
-                
+
                 txtRecognizedText.Text = string.Empty;
-                var recognitionEngine = new RecognizeEngineDiscreteHmmLearning(_codebook);
+                var recognitionEngine = new DetectionEngine(_codebook, _models);
                 _signal = new MicrophoneSoundSignalReader();
 
-                var length = (_signal.SampleRate/1000.0)*EngineParameters.Default.StepSizeMiliseconds;
+                var length = (_signal.SampleRate / 1000.0) * EngineParameters.Default.StepSizeMiliseconds;
                 if (_aggregator != null)
                 {
                     _aggregator.SampleReady -= AggregatorSampleReady;
                 }
                 _aggregator = new SampleAggregator(Convert.ToInt32(length));
-                
+
                 _aggregator.SampleReady += AggregatorSampleReady;
                 _signal.Start();
                 Action action = () =>
                 {
-                    Thread.Sleep(1000);
-                    recognitionEngine.RecognizeAsync(_signal, _classifier, OnMessageReceived, _aggregator);
+                    Thread.Sleep(3000);
+                    recognitionEngine.RecognizeAsync(_signal, OnMessageReceived, _aggregator);
                 };
 
                 action.BeginInvoke(null, null);
@@ -146,7 +146,7 @@ namespace SpeechRecognition.UI
             else
             {
                 btnRecog.Content = "Start Recognition";
-                _signal.Stop();
+                _signal.Close();
                 _currentState = AppState.Idle;
                 _aggregator.SampleReady -= AggregatorSampleReady;
                 _aggregator = null;
@@ -161,7 +161,7 @@ namespace SpeechRecognition.UI
 
         private void StartStopRecording(object sender, RoutedEventArgs e)
         {
-            if (_currentState!= AppState.Recording && _currentState !=AppState.Idle)
+            if (_currentState != AppState.Recording && _currentState != AppState.Idle)
             {
                 return;
             }
@@ -169,7 +169,7 @@ namespace SpeechRecognition.UI
             if (string.IsNullOrWhiteSpace(txtWord.Text))
             {
                 return;
-            }                      
+            }
 
             if (_currentState == AppState.Idle) //"Start Recording"
             {
@@ -199,7 +199,7 @@ namespace SpeechRecognition.UI
                 _currentState = AppState.Idle;
             }
         }
-      
+
 
         private void OnMessageReceived(string message)
         {
@@ -213,8 +213,8 @@ namespace SpeechRecognition.UI
         #endregion
 
         public enum AppState
-        {   
-            Idle=0,
+        {
+            Idle = 0,
             Recording,
             Training,
             Recognition
@@ -222,5 +222,5 @@ namespace SpeechRecognition.UI
         }
     }
 
-    
+
 }

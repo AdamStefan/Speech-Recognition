@@ -1,12 +1,12 @@
-﻿using System.IO;
+﻿using NAudio.Wave;
 
 namespace SpeechRecognition.Audio
 {
     public class WavSoundSignalReader : SoundSignalReader
     {
         #region Fields
-             
-        NAudio.Wave.WaveFileReader _reader;
+
+        WaveFileReader _reader;
         private string _file;
 
         #endregion
@@ -16,11 +16,11 @@ namespace SpeechRecognition.Audio
         public WavSoundSignalReader(string file)
         {
             _file = file;
-                                          
-            NAudio.Wave.WaveFileReader _reader = new NAudio.Wave.WaveFileReader(file);
+
+            WaveFileReader _reader = new WaveFileReader(file);
             SampleRate = _reader.WaveFormat.SampleRate;
             Channels = _reader.WaveFormat.Channels;
-            Length = (int)(_reader.SampleCount / Channels);      
+            Length = (int)(_reader.SampleCount / Channels);
         }
 
         #endregion
@@ -28,7 +28,7 @@ namespace SpeechRecognition.Audio
         #region Methods
 
         public override bool Read(float[] buffer, int bufferStartIndex, int length)
-        {            
+        {
             for (int index = 0; index < length; index++)
             {
                 float[] frameData;
@@ -39,38 +39,36 @@ namespace SpeechRecognition.Audio
                     {
                         data += frameData[channelIndex];
                     }
-                    if (buffer[bufferStartIndex + index] != data)
-                    {
-                        buffer[bufferStartIndex + index] = data;
-                    }
+
+                    buffer[bufferStartIndex + index] = data / frameData.Length;
                 }
                 else
                 {
                     return false;
                 }
             }
-            
+
             return true;
-        }        
+        }
 
         public override bool Read(float[] buffer, int length)
         {
-            var ret = Read(buffer, 0, length);            
+            var ret = Read(buffer, 0, length);
             return ret;
         }
 
         public override void Reset()
-        {          
-            if (_reader!=null)
+        {
+            if (_reader != null)
             {
                 _reader.Close();
             }
-            _reader = new NAudio.Wave.WaveFileReader(_file);
+            _reader = new WaveFileReader(_file);
         }
 
         #endregion
     }
 
 
-    
+
 }

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Numerics;
+using System.Collections.Generic;
 
 namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
 {
@@ -17,11 +17,15 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
         private readonly int _higherfrequency;
         private readonly int _samplingRate;
 
+        private readonly Dictionary<int, HammingWindowDef.HammingWindow> _hammingWindows =
+            new Dictionary<int, HammingWindowDef.HammingWindow>();
+
         #endregion
 
         #region Instance
 
-        public Mfcc(int numberOfFilterBanks = 46, int numberOfFftCoeff = 512, int lowerfrequency = 0, int samplingRate = 16000, int higherfrequency = 3400)
+        public Mfcc(int numberOfFilterBanks = 46, int numberOfFftCoeff = 512, int lowerfrequency = 0,
+            int samplingRate = 16000, int higherfrequency = 3400)
         {
             _numberOfFilterBanks = numberOfFilterBanks;
 
@@ -38,52 +42,30 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
 
         public double[] Extract(float[] frame, out bool isEmpty)
         {
-            var windowedSample = HammingWindowDef.ApplyHammingWindow(frame);
+            HammingWindowDef.HammingWindow hammingWindow;
+            if (!_hammingWindows.TryGetValue(frame.Length, out hammingWindow))
+            {
+                hammingWindow = new HammingWindowDef.HammingWindow(new HammingWindowDef(), frame.Length);
+                _hammingWindows.Add(frame.Length, hammingWindow);
+            }
 
-            //var result = FourierTransform.FFTAmplitudeSquared(windowedSample, (int)_numberOfFFTCoeff);
+            var windowedSample = hammingWindow.Apply(frame);
+
             FourierTransform ft = new FourierTransform();
-            ft.computeFFT(windowedSample, _numberOfFftCoeff);
+            var nummberOfCoeff = ft.computeFFT(windowedSample, _numberOfFftCoeff);
             double frameEnergy;
-            var result = ft.GetMagnitudeSquared(out frameEnergy);
+            var result = ft.GetMagnitudeSquared(nummberOfCoeff, out frameEnergy);
 
             if (_filterBankCoefficients == null)
             {
-                _filterBankCoefficients = ComputeMelFilterBank(result.Length, _lowerfrequency, _higherfrequency, _samplingRate, _numberOfFilterBanks + 2);
+                _filterBankCoefficients = ComputeMelFilterBank(result.Length, _lowerfrequency, _higherfrequency,
+                    _samplingRate, _numberOfFilterBanks + 2);
             }
 
-            #region compute PowerSpectralEstimates
-            //var mean = 0.0;
-            //for (var index = 0; index < _filterBankCoefficients[_filterBankCoefficients.Length - 1]; index++)
-            //{
-            //    mean += result[index];
-            //}
-            //mean = mean / _filterBankCoefficients[_filterBankCoefficients.Length - 1];
-
-                     
-            for (int index = 0; index < result.Length; index++)
-            {                
-                result[index] = result[index] / result.Length;                
-            }
-            //variance = variance / _filterBankCoefficients[_filterBankCoefficients.Length - 1];
-
-            #endregion
-
-            var cepstra = ApplyFilterbankFilter(result, _filterBankCoefficients);            
+            var cepstra = ApplyFilterbankFilter(result, _filterBankCoefficients);
             var ret = _dct.Apply(cepstra);
             ret[0] = Utils.Log(frameEnergy);
             isEmpty = false;
-            return ret;
-        }
-
-        public double[] PowerSpectralEstimates(Complex[] inputSignal)
-        {
-            var ret = new Double[inputSignal.Length];
-            for (int index = 0; index < inputSignal.Length; index++)
-            {
-                var magnitude = inputSignal[index].Magnitude;
-                ret[index] = magnitude * magnitude / inputSignal.Length;
-            }
-
             return ret;
         }
 
@@ -112,7 +94,8 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
             }
         }
 
-        public static int[] ComputeMelFilterBank(int size, int lowerFrequency = 0, int higherFrequency = 8000, int sampligRate = 16000, int numberOfCoefficients = 48)
+        public static int[] ComputeMelFilterBank(int size, int lowerFrequency = 0, int higherFrequency = 8000,
+            int sampligRate = 16000, int numberOfCoefficients = 48)
         {
             var minValue = MelScale(lowerFrequency);
             var maxValue = MelScale(higherFrequency);
@@ -135,7 +118,7 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
             }
 
             return fvalues;
-        }        
+        }
 
         public static double[] ApplyFilterbankFilter(double[] powerSpectralEstimates, int[] filterBankCoeficient)
         {
@@ -150,14 +133,20 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
                 if (frequency <= filterBankCoeficient[filterBankfunctionIndex])
                 {
                     var nominator = (double)(frequency - filterBankCoeficient[filterBankfunctionIndex - 1]);
-                    var denominator = (double)(filterBankCoeficient[filterBankfunctionIndex] - filterBankCoeficient[filterBankfunctionIndex - 1]);
+                    var denominator =
+                        (double)
+                            (filterBankCoeficient[filterBankfunctionIndex] -
+                             filterBankCoeficient[filterBankfunctionIndex - 1]);
 
                     return nominator / denominator;
                 }
                 if (frequency <= filterBankCoeficient[filterBankfunctionIndex + 1])
                 {
                     var nominator = (double)(filterBankCoeficient[filterBankfunctionIndex + 1] - frequency);
-                    var denominator = (double)(filterBankCoeficient[filterBankfunctionIndex + 1] - filterBankCoeficient[filterBankfunctionIndex]);
+                    var denominator =
+                        (double)
+                            (filterBankCoeficient[filterBankfunctionIndex + 1] -
+                             filterBankCoeficient[filterBankfunctionIndex]);
 
 
                     return nominator / denominator;
@@ -183,7 +172,7 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
             return ret;
 
         }
-        
+
         #endregion
     }
 }

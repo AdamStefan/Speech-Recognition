@@ -17,10 +17,10 @@ namespace SpeechRecognition.Audio
 
         public void Record(string fileName, int volume = 100)
         {
-            _waveIn = new WaveIn {WaveFormat = new WaveFormat()};
+            _waveIn = new WaveIn { WaveFormat = new WaveFormat() };
             _writer = new WaveFileWriter(fileName, _waveIn.WaveFormat);
 
-            TrySetVolumeControl(_waveIn.GetMixerLine(), volume);            
+            TrySetVolumeControl(_waveIn.GetMixerLine(), volume);
 
             _waveIn.DataAvailable += new_dataAvailable;
             _waveIn.StartRecording();
@@ -42,7 +42,6 @@ namespace SpeechRecognition.Audio
 
                 _writer.WriteSample(leftSample32);
                 _writer.WriteSample(rightSample32);
-
             }
         }
 
@@ -60,8 +59,8 @@ namespace SpeechRecognition.Audio
 
 
 
-        private static void TrySetVolumeControl(MixerLine mixerLine, int value)
-        {            
+        public static void TrySetVolumeControl(MixerLine mixerLine, int value)
+        {
             foreach (var control in mixerLine.Controls)
             {
                 if (control.ControlType == MixerControlType.Volume)

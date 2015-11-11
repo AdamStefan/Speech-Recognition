@@ -10,6 +10,7 @@ namespace SpeechRecognition.Audio
         private double _currentMinValue = Double.MaxValue;
         private double _currentMaxValue = Double.MinValue;
 
+        private double _sessionMaxValue = Double.MinValue;
         private int _currentProcessedItems;
         private int _voiceSample;
         private int _unvoicedSample;
@@ -26,6 +27,7 @@ namespace SpeechRecognition.Audio
             {
                 _currentMinValue = Math.Min(data[index], _currentMinValue);
                 _currentMaxValue = Math.Max(data[index], _currentMinValue);
+                _sessionMaxValue = Math.Max(_sessionMaxValue, _currentMaxValue);
                 if (isVoice)
                 {
                     _voiceSample ++;

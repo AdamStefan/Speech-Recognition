@@ -13,14 +13,13 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
 
         #region Instance
 
-        public MellFrequencyCepstrumProvider(int numberOfFilterBanks = 46, int numberOfFFTCoeff = 512, int lowerfrequency = 0, int samplingRate = 16000, int? numberOfCoef = null)
+        public MellFrequencyCepstrumProvider(int numberOfFilterBanks = 46, int numberOfFftCoeff = 512, int lowerfrequency = 0, int samplingRate = 16000, int? numberOfCoef = null)
         {
             _numberOfCoeff = numberOfCoef;
-            _mfcc = new Mfcc(numberOfFilterBanks, numberOfFFTCoeff, lowerfrequency, samplingRate);
+            _mfcc = new Mfcc(numberOfFilterBanks, numberOfFftCoeff, lowerfrequency, samplingRate);
         }
 
         #endregion
-
 
         #region IFeature Provider
 
@@ -32,7 +31,7 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
                 ret = ret.Take(_numberOfCoeff.Value).ToArray();
             }
 
-            return ret;            
+            return ret;
         }
 
         public bool ComputeDelta

@@ -16,12 +16,12 @@ namespace SpeechRecognition
         private double _standardDeviation;
         private double _mean;
         private readonly int _emptyFrames;
-        private readonly double alphaCoeff =0.2;
-        private VoiceActivationDetectionEnhancement _enhancements;       
+        private readonly double alphaCoeff = 0.2;
+        private VoiceActivationDetectionEnhancement _enhancements;
         private FrameInfo? _lastFrameInfo;
         private bool _lastFrameWasVoice;
 
-        
+
 
         #endregion
 
@@ -40,10 +40,9 @@ namespace SpeechRecognition
 
 
         #region Methods
-      
 
         private FrameInfo ComputeThreshholds(float[] buffer)
-        {            
+        {
             var energy = 0.0;
             var zeroCrossingRate = 0;
             var samplesWithSounds = 0;
@@ -59,7 +58,7 @@ namespace SpeechRecognition
                 }
 
                 if (_enhancements.HasFlag(VoiceActivationDetectionEnhancement.MahalanobisDistance)
-                    && _standardDeviation != 0.0 && (Math.Abs(buffer[iterator] - _mean) / _standardDeviation) > 2)
+                    && Math.Abs(_standardDeviation) > Double.Epsilon && (Math.Abs(buffer[iterator] - _mean) / _standardDeviation) > 2)
                 {
                     samplesWithSounds++;
                 }
@@ -72,21 +71,21 @@ namespace SpeechRecognition
                 ZeroCrossingRate = zeroCrossingRate / buffer.Length - 1,
                 VoicedSamples = samplesWithSounds
             };
-        }       
+        }
 
         private double ComputeCaracteristicFunction(FrameInfo frameInfo)
-        {            
+        {
             return frameInfo.Power * (1 - frameInfo.ZeroCrossingRate) * ScaleFactor;
         }
 
         private void Init()
-        {            
+        {
             var values = new double[_emptyFrames];
             var temp = 0.0;
             List<float> voiceFreeData = new List<float>();
             for (int index = 0; index < _emptyFrames; index++)
-            {                
-                var itemsToRead =  _frameSize;
+            {
+                var itemsToRead = _frameSize;
                 var buffer = new float[itemsToRead];
                 _signal.Read(buffer, 0, itemsToRead);
                 voiceFreeData.AddRange(buffer);
@@ -142,27 +141,27 @@ namespace SpeechRecognition
                 _lastFrameWasVoice = true;
                 return true;
             }
-            else if (_enhancements.HasFlag(VoiceActivationDetectionEnhancement.MahalanobisDistance) &&
+            if (_enhancements.HasFlag(VoiceActivationDetectionEnhancement.MahalanobisDistance) &&
                 ((_lastFrameInfo.Value.VoicedSamples > data.Length - _lastFrameInfo.Value.VoicedSamples)))
             {
                 _lastFrameWasVoice = true;
                 return true;
             }
-            else if (_enhancements.HasFlag(VoiceActivationDetectionEnhancement.DeltaVariance) && previousFrameInfo.HasValue)
-            {
-                var previousValue = ComputeCaracteristicFunction(previousFrameInfo.Value);
-                var gainRatio = (value - previousValue) / previousValue;
-                if (gainRatio > 0.5)
-                {
-                    _lastFrameWasVoice = true;
-                    return true;
-                }
-                else if (_lastFrameWasVoice && ((value - _thresholdsActivation) / _thresholdsActivation) > -0.2)
-                {
-                    _lastFrameWasVoice = true;
-                    return true;
-                }
-            }
+            //if (_enhancements.HasFlag(VoiceActivationDetectionEnhancement.DeltaVariance) && previousFrameInfo.HasValue)
+            //{
+            //    var previousValue = ComputeCaracteristicFunction(previousFrameInfo.Value);
+            //    var gainRatio = (value - previousValue) / previousValue;
+            //    if (gainRatio > 0.5)
+            //    {
+            //        _lastFrameWasVoice = true;
+            //        return true;
+            //    }
+            //    else if (_lastFrameWasVoice && ((value - _thresholdsActivation) / _thresholdsActivation) > -0.2)
+            //    {
+            //        _lastFrameWasVoice = true;
+            //        return true;
+            //    }
+            //}
             _lastFrameWasVoice = false;
             return false;
         }

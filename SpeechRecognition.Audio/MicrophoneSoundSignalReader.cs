@@ -10,26 +10,29 @@ namespace SpeechRecognition.Audio
 
         private readonly WaveIn _waveIn;
         private readonly Queue<float> _buffer;
-        private const int QueueLength = 1000000;
+        private const int QueueLength = 10000;
         private bool _isRecording;
 
         #endregion
 
         #region Instance
 
-        public MicrophoneSoundSignalReader()
+        public MicrophoneSoundSignalReader(int volume = 100)
         {
             _waveIn = new WaveIn();
             _buffer = new Queue<float>();
             _waveIn.DataAvailable += WaveInDataAvailable;
-            SampleRate = 44100; // 8 kHz
-            Channels = 2; // mono
-            _waveIn.WaveFormat = new WaveFormat(SampleRate, Channels);
+            _waveIn.WaveFormat = new WaveFormat();
+            SampleRate = _waveIn.WaveFormat.SampleRate;
+            Channels = _waveIn.WaveFormat.Channels;
+
+            Recorder.TrySetVolumeControl(_waveIn.GetMixerLine(), volume);
         }
+
 
         #endregion
 
-        #region Methods
+        #region Methods        
 
         void WaveInDataAvailable(object sender, WaveInEventArgs e)
         {
@@ -46,14 +49,14 @@ namespace SpeechRecognition.Audio
                         sample32 += sample / 32768f;
                     }
 
-                    _buffer.Enqueue(sample32);
+                    _buffer.Enqueue(sample32 / Channels);
 
                     if (_buffer.Count > 3 * QueueLength)
                     {
-                        //while (_buffer.Count > QueueLength)
-                        //{
-                        //    _buffer.Dequeue();
-                        //}
+                        while (_buffer.Count > QueueLength)
+                        {
+                            _buffer.Dequeue();
+                        }
                     }
                 }
             }
@@ -86,9 +89,11 @@ namespace SpeechRecognition.Audio
             return _isRecording;
         }
 
-        public void Stop()
+        public void Close()
         {
             _waveIn.StopRecording();
+            _waveIn.DataAvailable -= WaveInDataAvailable;
+            _waveIn.Dispose();
             _isRecording = false;
         }
 

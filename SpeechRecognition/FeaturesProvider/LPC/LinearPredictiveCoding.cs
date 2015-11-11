@@ -9,8 +9,9 @@ namespace SpeechRecognition.FeaturesProvider.LPC
         public static double[] Apply(float[] frame, int order = 80, int lpcOrder = 12)
         {
             var windowedSample = HammingWindowDef.ApplyHammingWindow(frame); // 1. windowing
-
-            var lpc = Lpc(windowedSample, lpcOrder);
+            double b0 = 0.0;
+            double energy = 0.0;
+            var lpc = Lpc(windowedSample, lpcOrder, out b0, out energy);
             var p = lpc.Length - 1;
             var ret = new double[order];
 
@@ -18,27 +19,45 @@ namespace SpeechRecognition.FeaturesProvider.LPC
             {
                 if (m <= p)
                 {
-                    ret[m - 1] = lpc[m - 1];
+                    ret[m] = lpc[m - 1];
                     for (var k = 1; k <= m - 1; k++)
                     {
-                        ret[m - 1] += k / ((double)(m)) * ret[k - 1] * lpc[m - k - 1];
+                        ret[m] += (k / ((double)(m))) * ret[k] * lpc[m - k - 1];
                     }
                 }
                 else
                 {
                     for (var k = m - p; k <= m - 1; k++)
                     {
-                        ret[m - 1] += k / ((double)(m)) * ret[k - 1] * lpc[m - k - 1];
+                        ret[m] += (k / ((double)(m))) * ret[k] * lpc[m - k - 1];
                     }
                 }
             }
 
+            ret[0] = b0;
             return ret;
         }
 
-        public static double[] Lpc(double[] data, int p)
+        public static double[] LpcAndHamming(float[] frame, int lpcOrder)
+        {
+            var windowedSample = HammingWindowDef.ApplyHammingWindow(frame); // 1. windowing   
+            double b0;
+            double energy = 0.0;
+            var lpc = Lpc(windowedSample, lpcOrder, out b0, out energy);
+            var ret = new double[lpc.Length + 1];
+
+
+            Array.Copy(lpc, 0, ret, 1, lpc.Length);
+            ret[1] = b0;
+            ret[0] = Math.Log(energy);
+
+            return ret;
+        }
+
+        public static double[] Lpc(double[] data, int p, out double b0, out double energy)
         {
             double[] r = new double[p + 1];
+            energy = 0.0;
 
             for (int m = 0; m <= p; m++)
             {
@@ -46,13 +65,18 @@ namespace SpeechRecognition.FeaturesProvider.LPC
                 for (int n = 0; n <= data.Length - m - 1; n++)
                 {
                     r[m] += data[n] * data[n + m];
+
+                    if (m == 0)
+                    {
+                        energy += (data[n] * data[n]);
+                    }
                 }
             }
-
-            return LevinsonDurbin(r, p);
+            energy = energy / data.Length;
+            return LevinsonDurbin(r, p, out b0);
         }
 
-        public static double[] LevinsonDurbin(double[] r, int p)
+        public static double[] LevinsonDurbin(double[] r, int p, out double b0)
         {
             double ei1;
             double[] ai = new double[p + 1];
@@ -86,6 +110,8 @@ namespace SpeechRecognition.FeaturesProvider.LPC
                 ret = ai1;
             }
 
+            b0 = ei1;
+            //b0 = Math.Sqrt(ei1);
             return ret;
         }
 

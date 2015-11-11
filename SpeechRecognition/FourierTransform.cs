@@ -207,7 +207,7 @@ namespace SpeechRecognition
                 _imag[i] = 0;
             }
             // perform FFT using the real & imag array
-            FFT();
+            Fft();
             return numberOfCoefficients;
         }
 
@@ -223,21 +223,21 @@ namespace SpeechRecognition
             return ret;
         }
 
-        public double[] GetMagnitudeSquared(out double energy) 
+        public double[] GetMagnitudeSquared(int scale, out double energy)
         {
             var ret = new double[_real.Length];
             energy = 0.0;
 
             for (int index = 0; index < _real.Length; index++)
             {
-                ret[index] = _real[index] * _real[index] + _imag[index] * _imag[index];
+                ret[index] = (_real[index] * _real[index] + _imag[index] * _imag[index]) / scale;
+
                 energy += ret[index];
             }
-            energy = energy / _real.Length;
             return ret;
         }
 
-        private void FFT()
+        private void Fft()
         {
             if (_numPoints == 1) { return; }
             const double pi = Math.PI;
@@ -291,8 +291,8 @@ namespace SpeechRecognition
                     {
                         int ip = butterfly + LE2;
                         // butterfly calculation
-                        double tempReal = (double)(_real[ip] * UR - _imag[ip] * UI);
-                        double tempImag = (double)(_real[ip] * UI + _imag[ip] * UR);
+                        double tempReal = _real[ip] * UR - _imag[ip] * UI;
+                        double tempImag = _real[ip] * UI + _imag[ip] * UR;
                         _real[ip] = _real[butterfly] - tempReal;
                         _imag[ip] = _imag[butterfly] - tempImag;
                         _real[butterfly] += tempReal;

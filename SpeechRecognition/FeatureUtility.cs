@@ -12,7 +12,7 @@ namespace SpeechRecognition
 
         public double StepSizeMiliseconds { get; private set; }
 
-        public double FrameSizeMiliseconds { get; private set; }        
+        public double FrameSizeMiliseconds { get; private set; }
 
         private FeatureProviderParameters ProviderParameters { get; set; }
 
@@ -20,10 +20,9 @@ namespace SpeechRecognition
 
         private float[] _nextFrame;
 
-        private SampleAggregator _sampleAggregator;
+        private readonly SampleAggregator _sampleAggregator;
 
-        
-        
+
         #endregion
 
         #region Instance
@@ -50,7 +49,7 @@ namespace SpeechRecognition
         {
             var frameSize = (int)Math.Floor(signal.SampleRate * FrameSizeMiliseconds / 1000.0);
             var stepSize = (int)Math.Floor(signal.SampleRate * StepSizeMiliseconds / 1000.0);
-            var filteredSignal = new PreemphasisFilter(signal, 0.95f, null);
+            var filteredSignal = new PreemphasisFilter(signal, 0.95f);
 
             var featureProvider = FeaturesProviderFactory.GetProvider(ProviderParameters, signal);
 
@@ -59,7 +58,6 @@ namespace SpeechRecognition
             var voiceActivationDetection = new VoiceActivityDetection(signal, frameSize, 8);
             int index = 0;
             var noOfItems = ProviderParameters.NumberOfCoeff - 1;
-
 
             var observables = new List<double[]>();
             var silentSamples = 0;
@@ -72,13 +70,15 @@ namespace SpeechRecognition
             while (Read(filteredSignal, frameSize, stepSize, out frame))
             {
                 var isVoice = voiceActivationDetection.IsVoice(frame);
-
-                _sampleAggregator.WriteData(frame, 0, stepSize, isVoice);
+                if (_sampleAggregator != null)
+                {
+                    _sampleAggregator.WriteData(frame, 0, stepSize, isVoice);
+                }
 
                 if (isVoice)
-                {                    
+                {
                     bool isEmpty;
-                    var features = featureProvider.Extract(frame, out isEmpty);                 
+                    var features = featureProvider.Extract(frame, out isEmpty);
 
                     silentSamples = 0;
                     observables.Add(features);
@@ -90,7 +90,7 @@ namespace SpeechRecognition
 
                     index++;
                 }
-                else if (observables.Count > 0 && silentSamples > silenceThreshHold )
+                else if (observables.Count > 0 && silentSamples > silenceThreshHold)
                 {
                     if (index >= minWordLength)
                     {
@@ -112,18 +112,6 @@ namespace SpeechRecognition
                     silentSamples++;
                 }
             }
-
-            if (observables.Count > minWordLength)
-            {
-                if (featureProvider.ComputeDelta)
-                {
-                    ComputeDelta(observables, index - 1, 1, noOfItems);
-                    ComputeDelta(observables, index - 2, noOfItems + 1, noOfItems, true);
-                    ComputeDelta(observables, index - 1, noOfItems + 1, noOfItems, true);
-                }
-
-                featureExtracted(observables);
-            }
         }
 
 
@@ -141,7 +129,7 @@ namespace SpeechRecognition
         }
 
         public void ExtractFeaturesAsync(SoundSignalReader signal, Action<List<double[]>> action)
-        {            
+        {
             Action<List<double[]>> addfeatures = features =>
             {
                 action.BeginInvoke(features, null, null);
@@ -149,9 +137,9 @@ namespace SpeechRecognition
 
             ExtractFeaturesInternalUsingVad(signal, addfeatures);
         }
-        
 
-              
+
+
 
         public bool Read(SoundSignalReader signal, int frameSize, int stepSize, out float[] frame)
         {
@@ -205,5 +193,5 @@ namespace SpeechRecognition
         }
 
         #endregion
-    }    
+    }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,24 +13,20 @@ namespace SpeechRecognition.UI
     /// <summary>
     /// Interaction logic for PolygonWaveFormControl.xaml
     /// </summary>
-    public partial class PolygonWaveFormControl:IWaveFormRenderer
+    public partial class PolygonWaveFormControl : IWaveFormRenderer
     {
         #region Fields
 
-        int _renderPosition;
-        double _yTranslate = 40;
-        double _yScale = 40;
-        readonly double _xScale = 2;
-        readonly int _blankZone = 10;
-        private SolidColorBrush _normalBrush;
-        private SolidColorBrush _silenceBrush;
-        private SolidColorBrush _voiceBrush;
-        private List<Rectangle> _rectangles = new List<Rectangle>();
+        private int _renderPosition;
+        private double _yTranslate = 40;
+        private double _yScale = 40;
+        private const double XScale = 2;
+        private readonly SolidColorBrush _silenceBrush;
+        private readonly SolidColorBrush _voiceBrush;
+        private readonly List<Rectangle> _rectangles = new List<Rectangle>();
 
-        Polygon _waveForm = new Polygon();        
-
-
-        private ConcurrentQueue<SampleAggregator.SamplePoint> _queue = new ConcurrentQueue<SampleAggregator.SamplePoint>();
+        private readonly ConcurrentQueue<SampleAggregator.SamplePoint> _queue =
+            new ConcurrentQueue<SampleAggregator.SamplePoint>();
 
         #endregion
 
@@ -41,48 +36,39 @@ namespace SpeechRecognition.UI
         {
             SizeChanged += OnSizeChanged;
             InitializeComponent();
-            _waveForm.Stroke = Foreground;
-            _waveForm.StrokeThickness = 1;
-            _normalBrush = new SolidColorBrush(Colors.Bisque);
+
             _silenceBrush = new SolidColorBrush(Colors.Blue);
-            _waveForm.Fill = _normalBrush;
             _voiceBrush = new SolidColorBrush(Colors.Red);
-            mainCanvas.Children.Add(_waveForm);
         }
 
         #endregion
 
         #region Methods
 
-        void OnSizeChanged(object sender, SizeChangedEventArgs e)
+        private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             // We will remove everything as we are going to rescale vertically
             _renderPosition = 0;
             ClearAllPoints();
 
             _yTranslate = ActualHeight / 2;
-            _yScale = ActualHeight / 2;
+            _yScale = ActualHeight / 4;
         }
 
         private void ClearAllPoints()
         {
-            _waveForm.Points.Clear();
-        }
-
-        private int Points
-        {
-            get { return _waveForm.Points.Count / 2; }
+            _rectangles.Clear();
         }
 
         private void Refresh()
         {
             SampleAggregator.SamplePoint point;
             while (_queue.TryDequeue(out point))
-            {                               
+            {
                 var maxValue = point.MaxValue;
                 var minValue = point.MinValue;
 
-                int visiblePixels = (int)(ActualWidth / _xScale);
+                int visiblePixels = (int)(ActualWidth / XScale);
                 if (visiblePixels > 0)
                 {
                     CreatePoint(maxValue, minValue, point.IsVoice);
@@ -91,15 +77,8 @@ namespace SpeechRecognition.UI
                     {
                         _renderPosition = 0;
                     }
-                    int erasePosition = (_renderPosition + _blankZone) % visiblePixels;
-                    if (erasePosition < Points)
-                    {
-                        double yPos = SampleToYPosition(0);                       
-                        _waveForm.Points[erasePosition] = new Point(erasePosition * _xScale, yPos);
-                        _waveForm.Points[BottomPointIndex(erasePosition)] = new Point(erasePosition * _xScale, yPos);
-                    }
                 }
-            }            
+            }
         }
 
         public void AddValue(SampleAggregator.SamplePoint samplePoint)
@@ -109,54 +88,54 @@ namespace SpeechRecognition.UI
             Dispatcher.BeginInvoke(action, DispatcherPriority.Render);
         }
 
-        private int BottomPointIndex(int position)
-        {
-            return _waveForm.Points.Count - position - 1;
-        }
-
         private double SampleToYPosition(double value)
         {
-            return _yTranslate + value * _yScale;
+            var ret = _yTranslate - value * _yScale;
+            return ret;
         }
 
         private void CreatePoint(double topValue, double bottomValue, bool isVoice)
         {
             double topYPos = SampleToYPosition(topValue);
             double bottomYPos = SampleToYPosition(bottomValue);
-            double xPos = _renderPosition*_xScale;
-            if (_renderPosition >= Points)
-            {
-                int insertPos = Points;
-                _waveForm.Points.Insert(insertPos, new Point(xPos, topYPos));
-                _waveForm.Points.Insert(insertPos + 1, new Point(xPos, bottomYPos));
-            }
-            else
-            {
-                _waveForm.Points[_renderPosition] = new Point(xPos, topYPos);
-                _waveForm.Points[BottomPointIndex(_renderPosition)] = new Point(xPos, bottomYPos);
-            }
 
-            AddRectangle(isVoice ? _voiceBrush : _silenceBrush);
+            AddRectangle(isVoice ? _voiceBrush : _silenceBrush, topYPos, bottomYPos);
             _renderPosition++;
         }
 
-        private void AddRectangle(Brush brush)
+        private void AddRectangle(Brush brush, double topYPos, double bottomYpos)
         {
             Rectangle rectangle;
 
+            if (_renderPosition == 0)
+            {
+                for (int index = 1; index < _rectangles.Count; index++)
+                {
+                    _rectangles[index].Fill = Brushes.Transparent;
+                }
+            }
+
             if (_renderPosition >= _rectangles.Count)
             {
-                rectangle = new Rectangle {Width = _xScale, Height = 2, Fill = brush};
+                rectangle = new Rectangle { Width = XScale, Height = Math.Max(bottomYpos - topYPos, 1), Fill = brush };
                 mainCanvas.Children.Add(rectangle);
+                _rectangles.Add(rectangle);
             }
             else
             {
                 rectangle = _rectangles[_renderPosition];
+                rectangle.Width = XScale;
+                rectangle.Height = Math.Max(bottomYpos - topYPos, 1);
+                rectangle.Fill = brush;
             }
-            rectangle.Fill = brush;
 
-            Canvas.SetLeft(rectangle, _renderPosition * _xScale);
-            Canvas.SetTop(rectangle, _yTranslate - 1);
+            if (rectangle.Height + topYPos > 100)
+            {
+            }
+
+
+            Canvas.SetLeft(rectangle, _renderPosition * XScale);
+            Canvas.SetTop(rectangle, topYPos);
         }
 
         /// <summary>
@@ -169,6 +148,5 @@ namespace SpeechRecognition.UI
         }
 
         #endregion
-
     }
 }
