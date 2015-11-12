@@ -71,6 +71,7 @@
     <Compile Include="HammingWindow.cs" />
     <Compile Include="HMM\HiddenMarkovModel.cs" />
     <Compile Include="HMM\HMMDefinition.cs" />
+    <Compile Include="IdentificationProperties.cs" />
     <Compile Include="PreemphasisFilter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecognizeEngineDiscreteHMMLearning.cs" />

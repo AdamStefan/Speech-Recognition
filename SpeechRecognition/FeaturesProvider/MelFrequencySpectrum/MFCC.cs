@@ -11,8 +11,8 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
         private readonly DiscreteCosinusTransform _dct;
         private readonly int _numberOfFftCoeff;
         private int[] _filterBankCoefficients;
-        private static readonly Func<double, double> MelScale = frequency => 2595.0 * Math.Log10(1.0 + frequency / 700.0);
-        private static readonly Func<double, double> MelScaleInverse = scale => 700 * (Math.Pow(10, scale / 2595.0) - 1);
+        private static readonly Func<double, double> MelScale = frequency => 2595.0*Math.Log10(1.0 + frequency/700.0);
+        private static readonly Func<double, double> MelScaleInverse = scale => 700*(Math.Pow(10, scale/2595.0) - 1);
         private readonly int _lowerfrequency;
         private readonly int _higherfrequency;
         private readonly int _samplingRate;

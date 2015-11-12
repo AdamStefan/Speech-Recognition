@@ -48,7 +48,6 @@ namespace SpeechRecognition
 
         #region Methods
 
-
         public TrainResult Train(Dictionary<string, IList<ISoundSignalReader>> signalsDictionary,
             SampleAggregator aggregator = null)
         {
@@ -61,7 +60,6 @@ namespace SpeechRecognition
             return new TrainResult { Catalog = _codeBook, Models = _models.Values.ToArray() };
         }
 
-
         public HiddenMarkovModel BuildModel(IList<ISoundSignalReader> signalReaders, string tag,
             SignalVisitor visitor = null)
         {
@@ -69,6 +67,7 @@ namespace SpeechRecognition
             var signalsCount = signals.Count();
             List<List<double[]>> samples = new List<List<double[]>>();
             var featureUtility = new FeatureUtility(_engineParameters);
+            var meanFeaturesLength = 0.0;
 
             for (var signalIndex = 0; signalIndex < signalsCount; signalIndex++)
             {
@@ -83,7 +82,9 @@ namespace SpeechRecognition
             for (var index = 0; index < samples.Count; index++)
             {
                 featuresInput[index] = samples[index].ToArray();
+                meanFeaturesLength += featuresInput[index].Length;
             }
+            meanFeaturesLength = meanFeaturesLength/samples.Count;
             var hmm = new HiddenMarkovModel(_numberOfHiddenStates, _codeBook.Size, false);
 
             List<int[]> observables = new List<int[]>();
@@ -98,10 +99,15 @@ namespace SpeechRecognition
 
             const int iterations = 20000;
             const double tolerance = 0.0;
-            var viterbiLearning = new ViterbiLearning(hmm) { Iterations = iterations, Tolerance = tolerance };
+            var viterbiLearning = new ViterbiLearning(hmm) {Iterations = iterations, Tolerance = tolerance};
 
             viterbiLearning.Run(observables.ToArray());
-            viterbiLearning.Model.Tag = tag;
+            viterbiLearning.Model.Tag = new IdentificationProperties
+            {
+                Class = ClassType.Word,
+                MeanFeaturesLength = meanFeaturesLength,
+                Label = tag
+            };
 
             _models[tag] = viterbiLearning.Model;
             return viterbiLearning.Model;
@@ -131,7 +137,16 @@ namespace SpeechRecognition
                 }
                 index++;
             }
-            name = bestFit != null ? bestFit.Tag.ToString() : string.Empty;
+
+
+            if (bestFit != null)
+            {
+                var idProp = (IdentificationProperties) bestFit.Tag;
+                name = idProp.Label;
+            }
+            else
+                name = string.Empty;
+
             return ret;
         }
 
@@ -143,7 +158,14 @@ namespace SpeechRecognition
                 var observations = _codeBook.Quantize(features.Select(item => new Point(item)).ToArray());
                 var likelyHoodValue = Double.MinValue;
                 HiddenMarkovModel bestFit = null;
-                foreach (var model in _models.Values)
+                var modelsToSearchFor = _models.Values.Where(item =>
+                {
+                    var idProp = (IdentificationProperties) item.Tag;
+                    var rateLength = Math.Abs(idProp.MeanFeaturesLength - observations.Length)/idProp.MeanFeaturesLength;
+                    return rateLength < 0.1;
+                });
+                   
+                foreach (var model in modelsToSearchFor)
                 {
                     var val = model.Evaluate(observations);
                     if (val > likelyHoodValue)
@@ -155,7 +177,8 @@ namespace SpeechRecognition
 
                 if (bestFit != null)
                 {
-                    handleMessage(bestFit.Tag.ToString());
+                    var idProp = (IdentificationProperties)bestFit.Tag;                    
+                    handleMessage(idProp.Label);
                 }
             };
 

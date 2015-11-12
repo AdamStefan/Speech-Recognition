@@ -58,7 +58,10 @@ namespace SpeechRecognition
             float[] frame;
 
             var voiceStream = new VoiceActivitySignalReader(filteredSignal, frameSize, 8);
-            voiceStream.Accept(voiceVisitor);
+            if (voiceVisitor != null)
+            {
+                voiceStream.Accept(voiceVisitor);
+            }
 
             int index = 0, silentSamples = 0, noOfItems = ProviderParameters.NumberOfCoeff - 1;
             var observables = new List<double[]>();

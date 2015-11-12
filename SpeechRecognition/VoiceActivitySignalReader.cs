@@ -10,7 +10,7 @@ namespace SpeechRecognition
         private readonly VoiceActivityDetection _voiceActivityDetection;
         private readonly ISoundSignalReader _soundSignal;
         private readonly Dictionary<string, object> _properties;
-        private float[] _nextFrame;        
+        private float[] _nextFrame;
 
         #endregion
 
