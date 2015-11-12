@@ -29,10 +29,11 @@ namespace SpeechRecognition
             _engineParameters = parameters;
             _codeBook = codebook;
             if (models != null)
-            {
+            {                   
                 foreach (var model in models)
                 {
-                    _models[model.Tag.ToString()] = model;
+                    var idProp = (IdentificationProperties) model.Tag;
+                    _models[idProp.Label] = model;
                 }
             }
 
@@ -102,12 +103,13 @@ namespace SpeechRecognition
             var viterbiLearning = new ViterbiLearning(hmm) {Iterations = iterations, Tolerance = tolerance};
 
             viterbiLearning.Run(observables.ToArray());
-            viterbiLearning.Model.Tag = new IdentificationProperties
+            var idProp = new IdentificationProperties
             {
                 Class = ClassType.Word,
                 MeanFeaturesLength = meanFeaturesLength,
                 Label = tag
             };
+            viterbiLearning.Model.Tag = idProp;
 
             _models[tag] = viterbiLearning.Model;
             return viterbiLearning.Model;
@@ -163,7 +165,7 @@ namespace SpeechRecognition
                     var idProp = (IdentificationProperties) item.Tag;
                     var rateLength = Math.Abs(idProp.MeanFeaturesLength - observations.Length)/idProp.MeanFeaturesLength;
                     return rateLength < 0.1;
-                });
+                }).ToArray();
                    
                 foreach (var model in modelsToSearchFor)
                 {
