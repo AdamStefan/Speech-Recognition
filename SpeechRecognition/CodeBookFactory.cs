@@ -7,9 +7,9 @@ namespace SpeechRecognition
 {
     public class CodeBookFactory
     {
-        public static Codebook FromWaves(IList<SoundSignalReader> sounds, EngineParameters parameters, int codeBookSize = 256)
+        public static Codebook FromWaves(IList<ISoundSignalReader> sounds, EngineParameters parameters, int codeBookSize = 256)
         {
-            var featureUtility = new FeatureUtility(parameters, null);
+            var featureUtility = new FeatureUtility(parameters);
             var features = new List<double[][]>();
             foreach (var signal in sounds)
             {

@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using SpeechRecognition.Audio;
 
 namespace SpeechRecognitionTests
 {
-    public class TestSoundSignalReader : SoundSignalReader
+    public class TestSoundSignalReader : SoundSignalReaderBase
     {
         private readonly float[] _signal;
         private static readonly Random Random = new Random(123123);
@@ -20,8 +21,8 @@ namespace SpeechRecognitionTests
 
         #endregion
 
-        public override bool Read(float[] buffer, int bufferStartIndex, int length)
-        {
+        protected override bool ReadInternal(float[] buffer, int bufferStartIndex, int length, Dictionary<string, object> properties)
+        {            
             var ret = Read(buffer, _position, bufferStartIndex, length);
             _position += length;
 
@@ -77,15 +78,10 @@ namespace SpeechRecognitionTests
 
             return new TestSoundSignalReader(ret);
         }
-
-        public override bool Read(float[] buffer, int length)
-        {
-            throw new NotImplementedException();
-        }
-
+       
         public override void Reset()
         {
-            throw new NotImplementedException();
+            _position = 0;
         }
     }
 

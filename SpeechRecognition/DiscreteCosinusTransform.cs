@@ -27,36 +27,22 @@ namespace SpeechRecognition
             {
                 for (int n = 0; n < _signalSize; n++)
                 {
-                    _coeff[k, n] = Math.Cos((Math.PI * (n + 0.5) * k) / (double)(_signalSize));
+                    _coeff[k, n] = Math.Cos((Math.PI * (n + 0.5) * k) / _signalSize);
                 }
             }
-        }
+        }      
 
-        public double[] PerformDCT(double[] signalInput, int numCepstra, int melFiters)
-        {
-            double[] ret = new double[numCepstra];
-            // perform DCT
-            for (int n = 1; n <= numCepstra; n++)
-            {
-                for (int i = 1; i <= melFiters; i++)
-                {
-                    ret[n - 1] += signalInput[i - 1] * Math.Cos(Math.PI * (n - 1) / melFiters * (i - 0.5));
-                }
-            }
-            return ret;
-        }
-
-        public double[] PerformDCT(double[] signalInput)
+        public double[] PerformDct(double[] signalInput)
         {
             double[] ret = new double[signalInput.Length];
-            var N = signalInput.Length;
+            var length = signalInput.Length;
             // perform DCT
-            for (int k = 1; k <= N; k++)
+            for (int k = 1; k <= length; k++)
             {
-                var prod = k == 1 ? 1 / Math.Sqrt(N) : Math.Sqrt(2.0 / N);
+                var prod = k == 1 ? 1 / Math.Sqrt(length) : Math.Sqrt(2.0 / length);
                 for (int i = 1; i <= signalInput.Length; i++)
                 {
-                    var phase = (Math.PI * (2 * i - 1) * (k - 1)) / (2.0 * N);
+                    var phase = (Math.PI * (2 * i - 1) * (k - 1)) / (2.0 * length);
                     ret[k - 1] += signalInput[i - 1] * Math.Cos(phase);
                 }
                 ret[k - 1] = ret[k - 1] * prod;

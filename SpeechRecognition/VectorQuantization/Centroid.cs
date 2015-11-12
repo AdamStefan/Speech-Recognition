@@ -6,7 +6,6 @@ namespace SpeechRecognition.VectorQuantization
     [Serializable]
     public class Centroid : Point
     {
-
         #region Fields
 
         protected double _distortion = 0;

@@ -52,7 +52,7 @@ namespace SpeechRecognition.FeaturesProvider.MelFrequencySpectrum
             var windowedSample = hammingWindow.Apply(frame);
 
             FourierTransform ft = new FourierTransform();
-            var nummberOfCoeff = ft.computeFFT(windowedSample, _numberOfFftCoeff);
+            var nummberOfCoeff = ft.ComputeFft(windowedSample, _numberOfFftCoeff);
             double frameEnergy;
             var result = ft.GetMagnitudeSquared(nummberOfCoeff, out frameEnergy);
 

@@ -68,12 +68,12 @@ namespace SpeechRecognition.VectorQuantization
         public bool Equals(Point p)
         {
             // If parameter is null return false:
-            if ((object)p == null)
+            if (p == null)
             {
                 return false;
             }
 
-            if (this.Dimension != p.Dimension)
+            if (Dimension != p.Dimension)
             {
                 return false;
             }

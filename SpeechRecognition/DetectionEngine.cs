@@ -49,7 +49,7 @@ namespace SpeechRecognition
         #region Methods
 
 
-        public TrainResult Train(Dictionary<string, IList<SoundSignalReader>> signalsDictionary,
+        public TrainResult Train(Dictionary<string, IList<ISoundSignalReader>> signalsDictionary,
             SampleAggregator aggregator = null)
         {
 
@@ -62,19 +62,19 @@ namespace SpeechRecognition
         }
 
 
-        public HiddenMarkovModel BuildModel(IList<SoundSignalReader> signalReaders, string tag,
-            SampleAggregator aggregator)
+        public HiddenMarkovModel BuildModel(IList<ISoundSignalReader> signalReaders, string tag,
+            SignalVisitor visitor = null)
         {
             var signals = signalReaders; // signals
             var signalsCount = signals.Count();
             List<List<double[]>> samples = new List<List<double[]>>();
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+            var featureUtility = new FeatureUtility(_engineParameters);
 
             for (var signalIndex = 0; signalIndex < signalsCount; signalIndex++)
             {
                 var signal = signals[signalIndex];
                 signal.Reset();
-                var allSignalfeatures = featureUtility.ExtractFeatures(signal).ToArray();
+                var allSignalfeatures = featureUtility.ExtractFeatures(signal, visitor).ToArray();
                 samples.AddRange(allSignalfeatures);
             }
 
@@ -100,19 +100,19 @@ namespace SpeechRecognition
             const double tolerance = 0.0;
             var viterbiLearning = new ViterbiLearning(hmm) { Iterations = iterations, Tolerance = tolerance };
 
-            var error = viterbiLearning.Run(observables.ToArray());
+            viterbiLearning.Run(observables.ToArray());
             viterbiLearning.Model.Tag = tag;
 
             _models[tag] = viterbiLearning.Model;
             return viterbiLearning.Model;
         }
 
-        public int Recognize(SoundSignalReader signal, out string name,
-            SampleAggregator aggregator = null)
+        public int Recognize(ISoundSignalReader signal, out string name,
+            SignalVisitor visitor = null)
         {
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+            var featureUtility = new FeatureUtility(_engineParameters);
             signal.Reset();
-            var features = featureUtility.ExtractFeatures(signal).First();
+            var features = featureUtility.ExtractFeatures(signal, visitor).First();
 
             var observations = _codeBook.Quantize(features.Select(item => new Point(item)).ToArray());
             var likelyHoodValue = Double.MinValue;
@@ -135,8 +135,8 @@ namespace SpeechRecognition
             return ret;
         }
 
-        public void RecognizeAsync(SoundSignalReader signal, Action<string> handleMessage,
-            SampleAggregator aggregator = null)
+        public void RecognizeAsync(ISoundSignalReader signal, Action<string> handleMessage,
+            SignalVisitor visitor = null)
         {
             Action<List<double[]>> action = features =>
             {
@@ -159,8 +159,8 @@ namespace SpeechRecognition
                 }
             };
 
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
-            featureUtility.ExtractFeaturesAsync(signal, action);
+            var featureUtility = new FeatureUtility(_engineParameters);
+            featureUtility.ExtractFeaturesAsync(signal, action, visitor);
         }
 
         #endregion

@@ -174,7 +174,7 @@ namespace SpeechRecognition
         private double[] _imag;
 
 
-        public int computeFFT(double[] signal, int numberOfCoefficients)
+        public int ComputeFft(double[] signal, int numberOfCoefficients)
         {
             double[] x = signal;
             if (!Utils.IsPowerOfTwo((uint)signal.Length))
@@ -247,7 +247,7 @@ namespace SpeechRecognition
 
             // FFT time domain decomposition carried out by "bit reversal sorting"
             // algorithm
-            int k = 0;
+            int k;
             for (int i = 1; i < _numPoints - 2; i++)
             {
                 if (i < j)

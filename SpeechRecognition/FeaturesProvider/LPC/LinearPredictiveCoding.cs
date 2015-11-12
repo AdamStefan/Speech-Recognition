@@ -9,8 +9,8 @@ namespace SpeechRecognition.FeaturesProvider.LPC
         public static double[] Apply(float[] frame, int order = 80, int lpcOrder = 12)
         {
             var windowedSample = HammingWindowDef.ApplyHammingWindow(frame); // 1. windowing
-            double b0 = 0.0;
-            double energy = 0.0;
+            double b0;
+            double energy;
             var lpc = Lpc(windowedSample, lpcOrder, out b0, out energy);
             var p = lpc.Length - 1;
             var ret = new double[order];
@@ -42,7 +42,7 @@ namespace SpeechRecognition.FeaturesProvider.LPC
         {
             var windowedSample = HammingWindowDef.ApplyHammingWindow(frame); // 1. windowing   
             double b0;
-            double energy = 0.0;
+            double energy;
             var lpc = Lpc(windowedSample, lpcOrder, out b0, out energy);
             var ret = new double[lpc.Length + 1];
 

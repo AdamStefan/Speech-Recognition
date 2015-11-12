@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace SpeechRecognition.Audio
 {
-    public class SampleAggregator
+    public class SampleAggregator : SignalVisitor
     {
         #region Fields
 
@@ -21,7 +22,7 @@ namespace SpeechRecognition.Audio
 
         #region Methods
 
-        public void WriteData(float[] data, int startIndex, int length, bool isVoice)
+        private void WriteData(float[] data, int startIndex, int length, bool isVoice)
         {
             for (int index = startIndex; index < length; index++)
             {
@@ -44,24 +45,20 @@ namespace SpeechRecognition.Audio
                         SampleReady(this,
                             new SamplePointEventArgs(new SamplePoint
                             {
-                                IsVoice = _voiceSample>_unvoicedSample,
+                                IsVoice = _voiceSample > _unvoicedSample,
                                 MaxValue = _currentMaxValue,
                                 MinValue = _currentMinValue
                             }));
-                        
+
                     }
                     _currentProcessedItems = 0;
                     _currentMinValue = Double.MaxValue;
                     _currentMaxValue = Double.MinValue;
                     _unvoicedSample = _voiceSample = 0;
-                }                
+                }
             }
         }
 
-        public void WriteData(float[] data, int startIndex, bool isVoice)
-        {
-            WriteData(data, startIndex, data.Length, isVoice);
-        }
 
         #endregion
 
@@ -99,9 +96,15 @@ namespace SpeechRecognition.Audio
 
             #endregion
         }
+
+        public override void Visit(float[] data, int startIndex, int length, Dictionary<string, object> properties)
+        {
+            var isVoice = (bool) properties["Voice"];
+            WriteData(data, startIndex, length, isVoice);
+        }
     }
 
-    
+
 
 
 }

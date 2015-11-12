@@ -49,8 +49,10 @@
     <Compile Include="SampleAggregator.cs" />
     <Compile Include="MicrophoneSoundSignalReader.cs" />
     <Compile Include="Recorder.cs" />
-    <Compile Include="SoundSignalReader.cs" />
+    <Compile Include="SignalVisitor.cs" />
+    <Compile Include="ISoundSignalReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SoundSignalReaderBase.cs" />
     <Compile Include="WavSoundSignalReader.cs" />
   </ItemGroup>
   <ItemGroup>

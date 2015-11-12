@@ -6,10 +6,9 @@ namespace SpeechRecognition
 {
     public class VoiceActivityDetection
     {
-
         #region Fields
 
-        private readonly SoundSignalReader _signal;
+        private readonly ISoundSignalReader _signal;
         private readonly int _frameSize;
         private const int ScaleFactor = 1000;
         private double _thresholdsActivation;
@@ -27,7 +26,8 @@ namespace SpeechRecognition
 
         #region Instance
 
-        public VoiceActivityDetection(SoundSignalReader signal, int frameSize, int emptyFrames = 3, VoiceActivationDetectionEnhancement enhancements = VoiceActivationDetectionEnhancement.All)
+        public VoiceActivityDetection(ISoundSignalReader signal, int frameSize, int emptyFrames = 3,
+            VoiceActivationDetectionEnhancement enhancements = VoiceActivationDetectionEnhancement.All)
         {
             _signal = signal;
             _frameSize = frameSize;
@@ -37,7 +37,6 @@ namespace SpeechRecognition
         }
 
         #endregion
-
 
         #region Methods
 
@@ -50,15 +49,16 @@ namespace SpeechRecognition
 
             for (int iterator = 0; iterator < buffer.Length; iterator++)
             {
-                energy += buffer[iterator] * buffer[iterator];
+                energy += buffer[iterator]*buffer[iterator];
                 if (iterator > 0)
                 {
                     var temp = Math.Sign(buffer[iterator]) - Math.Sign(buffer[iterator - 1]);
-                    zeroCrossingRate += Math.Abs(temp) / 2;
+                    zeroCrossingRate += Math.Abs(temp)/2;
                 }
 
                 if (_enhancements.HasFlag(VoiceActivationDetectionEnhancement.MahalanobisDistance)
-                    && Math.Abs(_standardDeviation) > Double.Epsilon && (Math.Abs(buffer[iterator] - _mean) / _standardDeviation) > 2)
+                    && Math.Abs(_standardDeviation) > Double.Epsilon &&
+                    (Math.Abs(buffer[iterator] - _mean)/_standardDeviation) > 2)
                 {
                     samplesWithSounds++;
                 }
@@ -67,15 +67,15 @@ namespace SpeechRecognition
             return new FrameInfo
             {
                 Energy = energy,
-                Power = energy / buffer.Length,
-                ZeroCrossingRate = zeroCrossingRate / buffer.Length - 1,
+                Power = energy/buffer.Length,
+                ZeroCrossingRate = zeroCrossingRate/buffer.Length - 1,
                 VoicedSamples = samplesWithSounds
             };
         }
 
         private double ComputeCaracteristicFunction(FrameInfo frameInfo)
         {
-            return frameInfo.Power * (1 - frameInfo.ZeroCrossingRate) * ScaleFactor;
+            return frameInfo.Power*(1 - frameInfo.ZeroCrossingRate)*ScaleFactor;
         }
 
         private void Init()
@@ -95,19 +95,19 @@ namespace SpeechRecognition
                 temp += values[index];
             }
 
-            var meanCaracteristicFunction = temp / _emptyFrames;
+            var meanCaracteristicFunction = temp/_emptyFrames;
             temp = 0.0;
             for (int index = 0; index < _emptyFrames; index++)
             {
                 var val = values[index] - meanCaracteristicFunction;
-                temp += val * val;
+                temp += val*val;
             }
 
             var varianceCaracteristicFunction = Math.Sqrt(temp);
 
             //var alpha = 0.2 * Math.Pow(varianceCaracteristicFunction, -0.8);
             //_thresholdsActivation = meanCaracteristicFunction + alpha * varianceCaracteristicFunction;
-            _thresholdsActivation = meanCaracteristicFunction + alphaCoeff * Math.Pow(varianceCaracteristicFunction, 0.2);
+            _thresholdsActivation = meanCaracteristicFunction + alphaCoeff*Math.Pow(varianceCaracteristicFunction, 0.2);
 
             if (_enhancements.HasFlag(VoiceActivationDetectionEnhancement.MahalanobisDistance))
             {
@@ -117,15 +117,15 @@ namespace SpeechRecognition
                 {
                     sum += voiceFreeData[i];
                 }
-                _mean = sum / voiceFreeData.Count;// mean
-                sum = 0;// reuse var for S.D.
+                _mean = sum/voiceFreeData.Count; // mean
+                sum = 0; // reuse var for S.D.
 
                 // 2. calculation of Standard Deviation
                 for (int i = 0; i < voiceFreeData.Count; i++)
                 {
                     sum += Math.Pow((voiceFreeData[i] - _mean), 2);
                 }
-                _standardDeviation = Math.Sqrt(sum / voiceFreeData.Count);
+                _standardDeviation = Math.Sqrt(sum/voiceFreeData.Count);
             }
         }
 
@@ -172,20 +172,12 @@ namespace SpeechRecognition
 
         #endregion
 
-        struct FrameInfo
+        private struct FrameInfo
         {
             public double Energy;
             public double Power;
             public double ZeroCrossingRate;
             public int VoicedSamples;
         }
-    }
-
-    [Flags]
-    public enum VoiceActivationDetectionEnhancement
-    {
-        MahalanobisDistance = 1,
-        DeltaVariance = 2,
-        All = MahalanobisDistance | DeltaVariance
     }
 }

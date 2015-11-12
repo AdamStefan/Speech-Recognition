@@ -21,7 +21,8 @@ namespace SpeechRecognition
 
         #region Instance
 
-        public RecognizeEngineDiscreteHmmLearning(int numberOfHiddenStates, EngineParameters parameters, Codebook codebook)
+        public RecognizeEngineDiscreteHmmLearning(int numberOfHiddenStates, EngineParameters parameters,
+            Codebook codebook)
         {
             _numberOfHiddenStates = numberOfHiddenStates;
             _engineParameters = parameters;
@@ -39,7 +40,8 @@ namespace SpeechRecognition
 
         #region Methods
 
-        public TrainResult TrainAll(Dictionary<string, IList<SoundSignalReader>> signalsDictionary, SampleAggregator aggregator = null)
+        public TrainResult TrainAll(Dictionary<string, IList<ISoundSignalReader>> signalsDictionary,
+            SignalVisitor voiceVisitor = null)
         {
             var numberOfItems = 0;
             foreach (var item in signalsDictionary)
@@ -54,7 +56,7 @@ namespace SpeechRecognition
             var allSignalIndex = 0;
             var modelIndex = 0;
 
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+            var featureUtility = new FeatureUtility(_engineParameters);
 
             foreach (var item in signalsDictionary)
             {
@@ -66,7 +68,7 @@ namespace SpeechRecognition
                 for (var signalIndex = 0; signalIndex < signalsCount; signalIndex++)
                 {
                     var signal = signals[signalIndex];
-                    List<Double[]> features = featureUtility.ExtractFeatures(signal).First();
+                    List<Double[]> features = featureUtility.ExtractFeatures(signal, voiceVisitor).First();
 
 
                     featuresInput[modelIndex][signalIndex] = features.ToArray();
@@ -82,9 +84,11 @@ namespace SpeechRecognition
 
             for (int wordIndex = 0; wordIndex < featuresInput.Length; wordIndex++) // foreach word
             {
-                for (var signalIndex = 0; signalIndex < featuresInput[wordIndex].Length; signalIndex++) // foreach word signal
+                for (var signalIndex = 0; signalIndex < featuresInput[wordIndex].Length; signalIndex++)
+                    // foreach word signal
                 {
-                    var points = featuresInput[wordIndex][signalIndex].Select(item => new Point(item)); // convert feature to points
+                    var points = featuresInput[wordIndex][signalIndex].Select(item => new Point(item));
+                        // convert feature to points
 
                     var codeItems = _codeBook.Quantize(points.ToArray());
                     observables.Add(codeItems);
@@ -94,31 +98,32 @@ namespace SpeechRecognition
             //var Bauc
 
 
-            var hmm = new HiddenMarkovClassifier(signalsDictionary.Count, new Forward(_numberOfHiddenStates), _codeBook.Size, signalsDictionary.Keys.ToArray());
+            var hmm = new HiddenMarkovClassifier(signalsDictionary.Count, new Forward(_numberOfHiddenStates),
+                _codeBook.Size, signalsDictionary.Keys.ToArray());
 
             const int iterations = 200;
             const double tolerance = 0;
 
             var teacher = new HiddenMarkovClassifierLearning(hmm,
-                i => new ViterbiLearning(hmm.Models[i]) { Iterations = iterations, Tolerance = tolerance }
+                i => new ViterbiLearning(hmm.Models[i]) {Iterations = iterations, Tolerance = tolerance}
                 );
 
             teacher.Run(observables.ToArray(), models);
 
-            return new TrainResult { Catalog = _codeBook, Models = hmm.Models.ToArray() };
+            return new TrainResult {Catalog = _codeBook, Models = hmm.Models.ToArray()};
 
         }
 
 
-        public TrainResult Train(Dictionary<string, IList<SoundSignalReader>> signalsDictionary,
-            SampleAggregator aggregator = null)
+        public TrainResult Train(Dictionary<string, IList<ISoundSignalReader>> signalsDictionary,
+            SignalVisitor voiceVisitor = null)
         {
             double[][][][] featuresInput = new Double[signalsDictionary.Count][][][];
 
             var models = new List<int>();
             var modelIndex = 0;
 
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+            var featureUtility = new FeatureUtility(_engineParameters);
 
             foreach (var item in signalsDictionary)
             {
@@ -129,7 +134,7 @@ namespace SpeechRecognition
                 for (var signalIndex = 0; signalIndex < signalsCount; signalIndex++)
                 {
                     var signal = signals[signalIndex];
-                    var allSignalfeatures = featureUtility.ExtractFeatures(signal).ToArray();
+                    var allSignalfeatures = featureUtility.ExtractFeatures(signal, voiceVisitor).ToArray();
                     samples.AddRange(allSignalfeatures);
                     for (var featuresIndex = 0; featuresIndex < allSignalfeatures.Length; featuresIndex++)
                     {
@@ -152,7 +157,7 @@ namespace SpeechRecognition
             for (int wordIndex = 0; wordIndex < featuresInput.Length; wordIndex++) // foreach word
             {
                 for (var signalIndex = 0; signalIndex < featuresInput[wordIndex].Length; signalIndex++)
-                // foreach word signal
+                    // foreach word signal
                 {
                     var points = featuresInput[wordIndex][signalIndex].Select(item => new Point(item));
                     // convert feature to points
@@ -170,21 +175,22 @@ namespace SpeechRecognition
             const double tolerance = 0;
 
             var teacher = new HiddenMarkovClassifierLearning(hmm,
-                i => new ViterbiLearning(hmm.Models[i]) { Iterations = iterations, Tolerance = tolerance, Batches = 2 }
+                i => new ViterbiLearning(hmm.Models[i]) {Iterations = iterations, Tolerance = tolerance, Batches = 2}
                 );
 
             teacher.Run(observables.ToArray(), models.ToArray());
 
-            return new TrainResult { Catalog = _codeBook, Models = hmm.Models.ToArray() };
+            return new TrainResult {Catalog = _codeBook, Models = hmm.Models.ToArray()};
         }
 
 
-        public int Recognize(SoundSignalReader signal, HiddenMarkovClassifier hmm, out string name, SampleAggregator aggregator = null)
+        public int Recognize(ISoundSignalReader signal, HiddenMarkovClassifier hmm, out string name,
+            SignalVisitor voiceVisitor = null)
         {
 
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+            var featureUtility = new FeatureUtility(_engineParameters);
             signal.Reset();
-            var features = featureUtility.ExtractFeatures(signal).First();
+            var features = featureUtility.ExtractFeatures(signal, voiceVisitor).First();
             var observations = _codeBook.Quantize(features.Select(item => new Point(item)).ToArray());
 
             double[] responsabilities;
@@ -207,13 +213,13 @@ namespace SpeechRecognition
             return ret;
         }
 
-        public int Recognize(SoundSignalReader signal, HiddenMarkovModel[] models, out string name,
-            SampleAggregator aggregator = null)
+        public int Recognize(ISoundSignalReader signal, HiddenMarkovModel[] models, out string name,
+            SignalVisitor voiceVisitor = null)
         {
 
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
+            var featureUtility = new FeatureUtility(_engineParameters);
             signal.Reset();
-            var features = featureUtility.ExtractFeatures(signal).First();
+            var features = featureUtility.ExtractFeatures(signal, voiceVisitor).First();
             var observations = _codeBook.Quantize(features.Select(item => new Point(item)).ToArray());
 
 
@@ -237,8 +243,8 @@ namespace SpeechRecognition
         }
 
 
-        public void RecognizeAsync(SoundSignalReader signal, HiddenMarkovClassifier hmm, Action<string> handleMessage,
-            SampleAggregator aggregator = null)
+        public void RecognizeAsync(ISoundSignalReader signal, HiddenMarkovClassifier hmm, Action<string> handleMessage,
+            SignalVisitor voiceVisitor = null)
         {
             Action<List<double[]>> action = features =>
             {
@@ -261,8 +267,8 @@ namespace SpeechRecognition
                 handleMessage(hmm[ret].Tag.ToString());
             };
 
-            var featureUtility = new FeatureUtility(_engineParameters, aggregator);
-            featureUtility.ExtractFeaturesAsync(signal, action);
+            var featureUtility = new FeatureUtility(_engineParameters);
+            featureUtility.ExtractFeaturesAsync(signal, action, voiceVisitor);
         }
 
         #endregion

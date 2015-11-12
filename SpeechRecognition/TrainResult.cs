@@ -21,7 +21,6 @@ namespace SpeechRecognition
                 BinaryFormatter binaryFormatter = new BinaryFormatter();
                 binaryFormatter.Serialize(fileStream, this);
             }
-
         }
 
         public static TrainResult Load(string fileName)

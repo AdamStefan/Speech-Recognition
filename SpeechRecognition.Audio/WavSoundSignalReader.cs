@@ -1,13 +1,15 @@
-﻿using NAudio.Wave;
+﻿using System.Collections.Generic;
+using System.Linq;
+using NAudio.Wave;
 
 namespace SpeechRecognition.Audio
 {
-    public class WavSoundSignalReader : SoundSignalReader
+    public class WavSoundSignalReader : SoundSignalReaderBase
     {
         #region Fields
 
-        WaveFileReader _reader;
-        private string _file;
+        private WaveFileReader _reader;
+        private readonly string _file;
 
         #endregion
 
@@ -16,31 +18,26 @@ namespace SpeechRecognition.Audio
         public WavSoundSignalReader(string file)
         {
             _file = file;
-
-            WaveFileReader _reader = new WaveFileReader(file);
+            _reader = new WaveFileReader(file);
             SampleRate = _reader.WaveFormat.SampleRate;
             Channels = _reader.WaveFormat.Channels;
-            Length = (int)(_reader.SampleCount / Channels);
+            Length = (int) (_reader.SampleCount/Channels);
         }
 
         #endregion
 
         #region Methods
 
-        public override bool Read(float[] buffer, int bufferStartIndex, int length)
-        {
+        protected override bool ReadInternal(float[] buffer, int bufferStartIndex, int length,
+             Dictionary<string, object> properties)
+        {            
             for (int index = 0; index < length; index++)
             {
                 float[] frameData;
                 if ((frameData = _reader.ReadNextSampleFrame()) != null)
                 {
-                    float data = 0.0f;
-                    for (int channelIndex = 0; channelIndex < frameData.Length; channelIndex++)
-                    {
-                        data += frameData[channelIndex];
-                    }
-
-                    buffer[bufferStartIndex + index] = data / frameData.Length;
+                    float data = frameData.Sum();
+                    buffer[bufferStartIndex + index] = data/frameData.Length;
                 }
                 else
                 {
@@ -49,12 +46,6 @@ namespace SpeechRecognition.Audio
             }
 
             return true;
-        }
-
-        public override bool Read(float[] buffer, int length)
-        {
-            var ret = Read(buffer, 0, length);
-            return ret;
         }
 
         public override void Reset()
@@ -68,7 +59,4 @@ namespace SpeechRecognition.Audio
 
         #endregion
     }
-
-
-
 }

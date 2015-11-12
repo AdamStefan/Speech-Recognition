@@ -14,13 +14,11 @@ namespace SpeechRecognition
 
         public double FrameSizeMiliseconds { get; private set; }
 
-        private FeatureProviderParameters ProviderParameters { get; set; }
+        private FeatureProviderParameters ProviderParameters { get; set; }        
 
-        private const int SilenceThreshHold = 10;
+        private int SilenceThreshHold { get; set; }
+        private int MinWordLength { get; set; }
 
-        private float[] _nextFrame;
-
-        private readonly SampleAggregator _sampleAggregator;
 
 
         #endregion
@@ -28,53 +26,46 @@ namespace SpeechRecognition
         #region Instance
 
         public FeatureUtility()
-            : this(EngineParameters.Default, null)
+            : this(EngineParameters.Default)
         {
 
         }
 
-        public FeatureUtility(EngineParameters parameters, SampleAggregator sampleAggregator)
+        public FeatureUtility(EngineParameters parameters)
         {
             FrameSizeMiliseconds = parameters.FrameSizeMiliseconds;
             StepSizeMiliseconds = parameters.StepSizeMiliseconds;
             ProviderParameters = parameters.ProviderParameters;
-            _sampleAggregator = sampleAggregator;
+
+            SilenceThreshHold = Convert.ToInt32(Math.Ceiling((FrameSizeMiliseconds*10)/StepSizeMiliseconds));
+            MinWordLength = Convert.ToInt32(Math.Ceiling((FrameSizeMiliseconds * 8) / StepSizeMiliseconds));
         }
 
         #endregion
 
+       
+
         #region Methods
 
-        private void ExtractFeaturesInternalUsingVad(SoundSignalReader signal, Action<List<double[]>> featureExtracted)
+        private void ExtractFeaturesInternalUsingVad(ISoundSignalReader signal, Action<List<double[]>> featureExtracted,
+            SignalVisitor voiceVisitor)
         {
-            var frameSize = (int)Math.Floor(signal.SampleRate * FrameSizeMiliseconds / 1000.0);
-            var stepSize = (int)Math.Floor(signal.SampleRate * StepSizeMiliseconds / 1000.0);
-            var filteredSignal = new PreemphasisFilter(signal, 0.95f);
-
             var featureProvider = FeaturesProviderFactory.GetProvider(ProviderParameters, signal);
 
+            var frameSize = (int) Math.Floor(signal.SampleRate*FrameSizeMiliseconds/1000.0);
+            var stepSize = (int) Math.Floor(signal.SampleRate*StepSizeMiliseconds/1000.0);
+            var filteredSignal = new PreemphasisFilter(signal, 0.95f);
             float[] frame;
-            filteredSignal.Reset();
-            var voiceActivationDetection = new VoiceActivityDetection(signal, frameSize, 8);
-            int index = 0;
-            var noOfItems = ProviderParameters.NumberOfCoeff - 1;
 
+            var voiceStream = new VoiceActivitySignalReader(filteredSignal, frameSize, 8);
+            voiceStream.Accept(voiceVisitor);
+
+            int index = 0, silentSamples = 0, noOfItems = ProviderParameters.NumberOfCoeff - 1;
             var observables = new List<double[]>();
-            var silentSamples = 0;
-            _nextFrame = null;
-            filteredSignal.Reset();
 
-
-            var silenceThreshHold = (frameSize * SilenceThreshHold) / stepSize;
-            var minWordLength = (frameSize * 8) / stepSize;
-            while (Read(filteredSignal, frameSize, stepSize, out frame))
+            bool isVoice;
+            while (voiceStream.Read(frameSize, stepSize, out frame, out isVoice))
             {
-                var isVoice = voiceActivationDetection.IsVoice(frame);
-                if (_sampleAggregator != null)
-                {
-                    _sampleAggregator.WriteData(frame, 0, stepSize, isVoice);
-                }
-
                 if (isVoice)
                 {
                     bool isEmpty;
@@ -90,9 +81,9 @@ namespace SpeechRecognition
 
                     index++;
                 }
-                else if (observables.Count > 0 && silentSamples > silenceThreshHold)
+                else if (observables.Count > 0 && silentSamples > SilenceThreshHold)
                 {
-                    if (index >= minWordLength)
+                    if (index >= MinWordLength)
                     {
                         if (featureProvider.ComputeDelta)
                         {
@@ -114,8 +105,7 @@ namespace SpeechRecognition
             }
         }
 
-
-        public IEnumerable<List<double[]>> ExtractFeatures(SoundSignalReader signal)
+        public IEnumerable<List<double[]>> ExtractFeatures(ISoundSignalReader signal, SignalVisitor voiceVisitor = null)
         {
             List<List<Double[]>> allObservables = new List<List<Double[]>>();
             Action<List<double[]>> addfeatures = features =>
@@ -123,49 +113,20 @@ namespace SpeechRecognition
                 allObservables.Add(features);
             };
 
-            ExtractFeaturesInternalUsingVad(signal, addfeatures);
+            ExtractFeaturesInternalUsingVad(signal, addfeatures, voiceVisitor);
 
             return allObservables;
         }
 
-        public void ExtractFeaturesAsync(SoundSignalReader signal, Action<List<double[]>> action)
+        public void ExtractFeaturesAsync(ISoundSignalReader signal, Action<List<double[]>> action,
+            SignalVisitor voiceVisitor = null)
         {
             Action<List<double[]>> addfeatures = features =>
             {
                 action.BeginInvoke(features, null, null);
             };
 
-            ExtractFeaturesInternalUsingVad(signal, addfeatures);
-        }
-
-
-
-
-        public bool Read(SoundSignalReader signal, int frameSize, int stepSize, out float[] frame)
-        {
-            int numberOfBitsToRead = frameSize;
-            int bufferStartIndex = 0;
-            if (_nextFrame == null)
-            {
-                _nextFrame = new float[frameSize];
-                frame = new float[frameSize];
-            }
-            else
-            {
-                frame = _nextFrame;
-                _nextFrame = new float[frameSize];
-                bufferStartIndex = frameSize - stepSize;
-                numberOfBitsToRead = stepSize;
-            }
-
-            var ret = signal.Read(frame, bufferStartIndex, numberOfBitsToRead);
-
-            for (int index = stepSize; index < frameSize; index++)
-            {
-                _nextFrame[index - stepSize] = frame[index];
-            }
-
-            return ret;
+            ExtractFeaturesInternalUsingVad(signal, addfeatures, voiceVisitor);
         }
 
         private void ComputeDelta(IList<double[]> values, int deltaIndex, int startIndex, int count,

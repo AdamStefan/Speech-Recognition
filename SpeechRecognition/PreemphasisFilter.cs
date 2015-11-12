@@ -1,32 +1,32 @@
-﻿using SpeechRecognition.Audio;
+﻿using System.Collections.Generic;
+using SpeechRecognition.Audio;
 
 namespace SpeechRecognition
 {
-    public class PreemphasisFilter : SoundSignalReader
+    public class PreemphasisFilter : SoundSignalReaderBase
     {
         #region Fields
 
-        private readonly SoundSignalReader _signalReader;
+        private readonly ISoundSignalReader _signalReader;
         private readonly float _filterRatio;        
-        private float? _lastFrameValue;
-        private SampleAggregator _sampleAggregator;
+        private float? _lastFrameValue;        
 
         #endregion
 
         #region Instance
 
-        public PreemphasisFilter(SoundSignalReader signalReader, float filterRatio, SampleAggregator sampleAggregator = null)
+        public PreemphasisFilter(ISoundSignalReader signalReader, float filterRatio)
         {
             _signalReader = signalReader;
             _filterRatio = filterRatio;
-            Length = signalReader.Length;
-            _sampleAggregator = sampleAggregator;
+            Length = signalReader.Length;            
         }
 
-        #endregion               
+        #endregion
 
-        public override bool Read(float[] buffer, int bufferStartIndex, int length)
-        {
+        protected override bool ReadInternal(float[] buffer, int bufferStartIndex, int length,
+             Dictionary<string, object> properties)
+        {            
             var bufferOffSetIndex = 0;
             bool start = true;
             float[] tmpbuffer;
@@ -38,36 +38,27 @@ namespace SpeechRecognition
                 bufferOffSetIndex = 1;
                 tmpbuffer = new float[length + bufferOffSetIndex];
                 tmpbuffer[0] = _lastFrameValue.Value;
-                startIndex = 1;                
+                startIndex = 1;
             }
             else
             {
                 tmpbuffer = new float[length + bufferOffSetIndex];
-            }            
-
-            var ret = _signalReader.Read(tmpbuffer, startIndex, itemsLength);
-            if (_sampleAggregator != null)
-            {
-                _sampleAggregator.WriteData(tmpbuffer, startIndex, itemsLength, false);
             }
+
+            var ret = _signalReader.Read(tmpbuffer, startIndex, itemsLength);           
 
             _lastFrameValue = tmpbuffer[tmpbuffer.Length - 1];
 
             for (int index = 1; index < tmpbuffer.Length; index++)
             {
-                buffer[bufferStartIndex + index - bufferOffSetIndex] = tmpbuffer[index] - _filterRatio * tmpbuffer[index - 1];
+                buffer[bufferStartIndex + index - bufferOffSetIndex] = tmpbuffer[index] -
+                                                                       _filterRatio*tmpbuffer[index - 1];
             }
             if (start)
             {
                 buffer[0] = tmpbuffer[0];
             }
 
-            return ret;
-        }
-
-        public override bool Read(float[] buffer, int length)
-        {
-            var ret = Read(buffer, 0, length);            
             return ret;
         }
 

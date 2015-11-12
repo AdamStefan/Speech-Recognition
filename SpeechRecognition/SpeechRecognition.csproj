@@ -79,7 +79,9 @@
     <Compile Include="VectorQuantization\Centroid.cs" />
     <Compile Include="VectorQuantization\Codebook.cs" />
     <Compile Include="VectorQuantization\Point.cs" />
+    <Compile Include="VoiceActivationDetectionEnhancement.cs" />
     <Compile Include="VoiceActivityDetection.cs" />
+    <Compile Include="VoiceActivitySignalReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -1,7 +1,9 @@
-﻿namespace SpeechRecognition.Audio
+﻿using System.Collections.Generic;
+
+namespace SpeechRecognition.Audio
 {
 
-    public class ArraySignalReader : SoundSignalReader
+    public class ArraySignalReader : SoundSignalReaderBase
     {
         #region Fields
 
@@ -23,10 +25,10 @@
 
         #region Methods
 
-        public override bool Read(float[] buffer, int bufferStartIndex, int length)
-        {
+        protected override bool ReadInternal(float[] buffer, int bufferStartIndex, int length,
+             Dictionary<string, object> properties)
+        {            
             var ret = Read(buffer, _position, bufferStartIndex, length);
-
             _position += length;
             return ret;
         }
@@ -55,12 +57,6 @@
             _position = 0;
         }
 
-        public override bool Read(float[] buffer, int length)
-        {
-            var ret = Read(buffer, _position, 0, length);
-            _position += length;
-            return ret;
-        }
 
         #endregion
     }

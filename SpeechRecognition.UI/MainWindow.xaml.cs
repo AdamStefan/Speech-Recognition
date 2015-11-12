@@ -53,7 +53,7 @@ namespace SpeechRecognition.UI
 
         private void Train()
         {
-            Dictionary<string, IList<SoundSignalReader>> learningWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
+            Dictionary<string, IList<ISoundSignalReader>> learningWordSignals = new Dictionary<string, IList<ISoundSignalReader>>();
 
             List<string> learningDirectories = new List<string>();
             foreach (var folder in ConfigurationSettings.LearningsFolders)
@@ -64,7 +64,7 @@ namespace SpeechRecognition.UI
             foreach (var directory in learningDirectories.Where(item => !item.Contains("catalog")))
             {
                 var word = new DirectoryInfo(directory).Name;
-                learningWordSignals.Add(word, new List<SoundSignalReader>());
+                learningWordSignals.Add(word, new List<ISoundSignalReader>());
                 var wavFiles = Directory.GetFiles(directory).Select(item => new FileInfo(item)).Where(fItem => fItem.Extension.Contains("wav"));
                 foreach (var file in wavFiles)
                 {
@@ -72,7 +72,7 @@ namespace SpeechRecognition.UI
                 }
             }
 
-            var catalogSignals = new List<SoundSignalReader>();
+            var catalogSignals = new List<ISoundSignalReader>();
             catalogSignals.AddRange(learningWordSignals.SelectMany(item => item.Value));
 
             var codeBook = CodeBookFactory.FromWaves(catalogSignals, EngineParameters.Default);

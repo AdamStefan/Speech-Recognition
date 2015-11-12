@@ -4,7 +4,7 @@ using NAudio.Wave;
 
 namespace SpeechRecognition.Audio
 {
-    public class MicrophoneSoundSignalReader : SoundSignalReader
+    public class MicrophoneSoundSignalReader : SoundSignalReaderBase
     {
         #region Fields
 
@@ -34,24 +34,24 @@ namespace SpeechRecognition.Audio
 
         #region Methods        
 
-        void WaveInDataAvailable(object sender, WaveInEventArgs e)
+        private void WaveInDataAvailable(object sender, WaveInEventArgs e)
         {
             lock (_buffer)
             {
-                var step = Channels * 2;// foreach channel there is a sample of 16 bits
+                var step = Channels*2; // foreach channel there is a sample of 16 bits
                 for (int i = 0; i < e.BytesRecorded; i += step)
                 {
                     float sample32 = 0.0f;
                     for (var channelIndex = 0; channelIndex < Channels; channelIndex++)
                     {
-                        var j = channelIndex * 2;
-                        var sample = (short)((e.Buffer[i + j + 1] << 8) | e.Buffer[i + j + 0]);
-                        sample32 += sample / 32768f;
+                        var j = channelIndex*2;
+                        var sample = (short) ((e.Buffer[i + j + 1] << 8) | e.Buffer[i + j + 0]);
+                        sample32 += sample/32768f;
                     }
 
-                    _buffer.Enqueue(sample32 / Channels);
+                    _buffer.Enqueue(sample32/Channels);
 
-                    if (_buffer.Count > 3 * QueueLength)
+                    if (_buffer.Count > 3*QueueLength)
                     {
                         while (_buffer.Count > QueueLength)
                         {
@@ -62,8 +62,9 @@ namespace SpeechRecognition.Audio
             }
         }
 
-        public override bool Read(float[] buffer, int bufferStartIndex, int length)
-        {
+        protected override bool ReadInternal(float[] buffer, int bufferStartIndex, int length,
+            Dictionary<string, object> properties)
+        {            
             while (_isRecording)
             {
                 lock (_buffer)
@@ -103,10 +104,6 @@ namespace SpeechRecognition.Audio
             _isRecording = true;
         }
 
-        public override bool Read(float[] buffer, int length)
-        {
-            return Read(buffer, 0, length);
-        }
 
         public override void Reset()
         {

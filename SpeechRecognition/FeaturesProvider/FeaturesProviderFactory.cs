@@ -6,7 +6,7 @@ namespace SpeechRecognition.FeaturesProvider
 {
     public static class FeaturesProviderFactory
     {
-        public static IFeatureProvider GetProvider(FeatureProviderParameters parameters, SoundSignalReader signal)
+        public static IFeatureProvider GetProvider(FeatureProviderParameters parameters, ISoundSignalReader signal)
         {
             var lpcParam = parameters as LpcCepstrumParameters;
             if (lpcParam!= null)

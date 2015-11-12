@@ -25,9 +25,9 @@ namespace SpeechRecognitionTests
             var codeBook = CodeBookFactory.FromWaves(signals, EngineParameters.Default);
             var recognitionEngine = new DetectionEngine(codeBook);
 
-            recognitionEngine.BuildModel(new SoundSignalReader[] { signals[0] }, "a", null);
-            recognitionEngine.BuildModel(new SoundSignalReader[] { signals[1] }, "b", null);
-            recognitionEngine.BuildModel(new SoundSignalReader[] { signals[2] }, "c", null);
+            recognitionEngine.BuildModel(new ISoundSignalReader[] { signals[0] }, "a", null);
+            recognitionEngine.BuildModel(new ISoundSignalReader[] { signals[1] }, "b", null);
+            recognitionEngine.BuildModel(new ISoundSignalReader[] { signals[2] }, "c", null);
             string name;
             var value = recognitionEngine.Recognize(signals[1],out name);
 
@@ -43,13 +43,14 @@ namespace SpeechRecognitionTests
             var arraySoundSignalReader = new ArraySignalReader(new float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
             var filteredSignal = new PreemphasisFilter(arraySoundSignalReader, 0.95f);
 
-            FeatureUtility fu = new FeatureUtility();
+            VoiceActivitySignalReader fu = new VoiceActivitySignalReader(filteredSignal, 5);
             float[] frame1;
             float[] frame2;
             float[] frame3;
-            fu.Read(filteredSignal, 5, 2, out frame1);
-            fu.Read(filteredSignal, 5, 2, out frame2);
-            fu.Read(filteredSignal, 5, 2, out frame3);
+            bool isVoice;
+            fu.Read( 5, 2, out frame1,out isVoice);
+            fu.Read(5, 2, out frame2, out isVoice);
+            fu.Read(5, 2, out frame3, out isVoice);
 
 
             var arraySoundSignalReader1 = new ArraySignalReader(new float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
@@ -67,8 +68,8 @@ namespace SpeechRecognitionTests
         [TestMethod]
         public void TestMethodDiscrete()
         {
-            Dictionary<string, IList<SoundSignalReader>> learningWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
-            Dictionary<string, IList<SoundSignalReader>> testWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
+            Dictionary<string, IList<ISoundSignalReader>> learningWordSignals = new Dictionary<string, IList<ISoundSignalReader>>();
+            Dictionary<string, IList<ISoundSignalReader>> testWordSignals = new Dictionary<string, IList<ISoundSignalReader>>();
 
             var learningDirectories = Directory.GetDirectories("Sounds\\Learning");
             var testDirectories = Directory.GetDirectories("Sounds\\test");
@@ -77,7 +78,7 @@ namespace SpeechRecognitionTests
             foreach (var directory in learningDirectories.Where(item => !item.Contains("catalog")))
             {
                 var word = new DirectoryInfo(directory).Name;
-                learningWordSignals.Add(word, new List<SoundSignalReader>());
+                learningWordSignals.Add(word, new List<ISoundSignalReader>());
                 var wavFiles = Directory.GetFiles(directory).Select(item => new FileInfo(item)).Where(fItem => fItem.Extension.Contains("wav"));
                 foreach (var file in wavFiles)
                 {
@@ -88,7 +89,7 @@ namespace SpeechRecognitionTests
             foreach (var directory in testDirectories)
             {
                 var word = new DirectoryInfo(directory).Name;
-                testWordSignals.Add(word, new List<SoundSignalReader>());
+                testWordSignals.Add(word, new List<ISoundSignalReader>());
                 var wavFiles = Directory.GetFiles(directory).Select(item => new FileInfo(item)).Where(fItem => fItem.Extension.Contains("wav"));
                 foreach (var file in wavFiles)
                 {
@@ -96,7 +97,7 @@ namespace SpeechRecognitionTests
                 }
             }            
 
-            var catalogSignals = new List<SoundSignalReader>();
+            var catalogSignals = new List<ISoundSignalReader>();
             catalogSignals.AddRange(learningWordSignals.SelectMany(item => item.Value));
 
             var codeBook = CodeBookFactory.FromWaves(catalogSignals, EngineParameters.Default);
@@ -122,8 +123,8 @@ namespace SpeechRecognitionTests
         [TestMethod]
         public void TestDetectionEngine()
         {
-            Dictionary<string, IList<SoundSignalReader>> learningWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
-            Dictionary<string, IList<SoundSignalReader>> testWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
+            Dictionary<string, IList<ISoundSignalReader>> learningWordSignals = new Dictionary<string, IList<ISoundSignalReader>>();
+            Dictionary<string, IList<ISoundSignalReader>> testWordSignals = new Dictionary<string, IList<ISoundSignalReader>>();
 
             var learningDirectories = Directory.GetDirectories("Sounds\\Learning");
             var testDirectories = Directory.GetDirectories("Sounds\\test");
@@ -131,7 +132,7 @@ namespace SpeechRecognitionTests
             foreach (var directory in learningDirectories.Where(item => !item.Contains("catalog")))
             {
                 var word = new DirectoryInfo(directory).Name;
-                learningWordSignals.Add(word, new List<SoundSignalReader>());
+                learningWordSignals.Add(word, new List<ISoundSignalReader>());
                 var wavFiles = Directory.GetFiles(directory).Select(item => new FileInfo(item)).Where(fItem => fItem.Extension.Contains("wav"));
                 foreach (var file in wavFiles)
                 {
@@ -142,7 +143,7 @@ namespace SpeechRecognitionTests
             foreach (var directory in testDirectories)
             {
                 var word = new DirectoryInfo(directory).Name;
-                testWordSignals.Add(word, new List<SoundSignalReader>());
+                testWordSignals.Add(word, new List<ISoundSignalReader>());
                 var wavFiles = Directory.GetFiles(directory).Select(item => new FileInfo(item)).Where(fItem => fItem.Extension.Contains("wav"));
                 foreach (var file in wavFiles)
                 {
@@ -150,7 +151,7 @@ namespace SpeechRecognitionTests
                 }
             }
 
-            var catalogSignals = new List<SoundSignalReader>();
+            var catalogSignals = new List<ISoundSignalReader>();
             catalogSignals.AddRange(learningWordSignals.SelectMany(item => item.Value));
 
             var codeBook = CodeBookFactory.FromWaves(catalogSignals, EngineParameters.Default);
@@ -247,8 +248,8 @@ namespace SpeechRecognitionTests
         [TestMethod]
         public void TestVoiceActivationDetection()
         {
-            Dictionary<string, IList<SoundSignalReader>> learningWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
-            Dictionary<string, IList<SoundSignalReader>> testWordSignals = new Dictionary<string, IList<SoundSignalReader>>();
+            Dictionary<string, IList<ISoundSignalReader>> learningWordSignals = new Dictionary<string, IList<ISoundSignalReader>>();
+            Dictionary<string, IList<ISoundSignalReader>> testWordSignals = new Dictionary<string, IList<ISoundSignalReader>>();
 
             var learningDirectories = Directory.GetDirectories("Sounds\\Learning");
             var testDirectories = Directory.GetDirectories("Sounds\\test");
@@ -257,7 +258,7 @@ namespace SpeechRecognitionTests
             foreach (var directory in learningDirectories.Where(item => !item.Contains("catalog")))
             {
                 var word = new DirectoryInfo(directory).Name;
-                learningWordSignals.Add(word, new List<SoundSignalReader>());
+                learningWordSignals.Add(word, new List<ISoundSignalReader>());
                 var wavFiles = Directory.GetFiles(directory).Select(item => new FileInfo(item)).Where(fItem => fItem.Extension.Contains("wav"));
                 foreach (var file in wavFiles)
                 {
@@ -283,12 +284,12 @@ namespace SpeechRecognitionTests
         {
             var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
             FourierTransform ft = new FourierTransform();
-            ft.computeFFT(data, 16);
+            ft.ComputeFft(data, 16);
             double energy;
             var result = ft.GetMagnitudeSquared(1, out energy);
 
             var dct = new DiscreteCosinusTransform(data.Length);
-            var ret = dct.PerformDCT(data);
+            var ret = dct.PerformDct(data);
         }
 
 
