@@ -12,29 +12,7 @@ namespace SpeechRecognitionTests
 {
     [TestClass]
     public class EngineTests
-    {
-        [TestMethod]
-        public void TestMethod1()
-        {
-            var signals = new TestSoundSignalReader[3];
-            for (int index = 0; index < 3; index++)
-            {
-                signals[index] = TestSoundSignalReader.GenerateSignal(5120);
-            }
-
-            var codeBook = CodeBookFactory.FromWaves(signals, EngineParameters.Default);
-            var recognitionEngine = new DetectionEngine(codeBook);
-
-            recognitionEngine.BuildModel(new ISoundSignalReader[] { signals[0] }, "a", null);
-            recognitionEngine.BuildModel(new ISoundSignalReader[] { signals[1] }, "b", null);
-            recognitionEngine.BuildModel(new ISoundSignalReader[] { signals[2] }, "c", null);
-            string name;
-            var value = recognitionEngine.Recognize(signals[1],out name);
-
-            Assert.AreEqual("b", name);
-        }
-
-        
+    {            
 
         [TestMethod]
         public void TestFeatureUtility()
@@ -280,7 +258,7 @@ namespace SpeechRecognitionTests
         }
 
         [TestMethod]
-        public void TestFFT()
+        public void TestFft()
         {
             var data = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
             FourierTransform ft = new FourierTransform();
